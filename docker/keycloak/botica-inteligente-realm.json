@@ -1,0 +1,42 @@
+{
+  "realm": "botica-inteligente",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "OWNER",
+        "description": "Duenio de la botica"
+      },
+      {
+        "name": "SELLER",
+        "description": "Vendedor de la botica"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "botica-backend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "bearerOnly": true
+    },
+    {
+      "clientId": "botica-frontend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost:4200/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4200"
+      ]
+    }
+  ]
+}

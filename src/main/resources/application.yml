@@ -1,19 +1,8 @@
-server:
-  port: 8080
-
 spring:
   application:
-    name: BoticaAmanecer
-  datasource:
-    url: jdbc:postgresql://localhost:5432/botica_amanecer
-    username: postgres
-    password: ${DB_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+    name: Asistente-y-Gestion-de-Botica-Inteligente
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+server:
+  port: ${SERVER_PORT:8080}
