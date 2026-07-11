@@ -34,3 +34,5 @@ Thumbs.db
 # Environment
 .env
 application-local.yml
+jdk-22.0.2/
+openjdk-22.0.2_linux-x64_bin.tar.gz
