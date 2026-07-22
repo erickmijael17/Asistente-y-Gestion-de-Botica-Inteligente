@@ -1,26 +1,12 @@
 spring:
   datasource:
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:testcontainers:postgresql:16-alpine?currentSchema=botica
+    username: tc
+    password: tc
   jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-  flyway:
-    enabled: true
+    show-sql: true
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8081/realms/botica-inteligente
-
-springdoc:
-  swagger-ui:
-    enabled: false
-  api-docs:
-    enabled: false
-
-app:
-  cors:
-    allowed-origins:
-      - http://localhost:4200
-    allow-credentials: true
+          issuer-uri: http://localhost:8081/realms/botica-inteligente-test

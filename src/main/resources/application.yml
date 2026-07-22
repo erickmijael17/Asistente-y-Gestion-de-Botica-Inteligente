@@ -3,6 +3,33 @@ spring:
     name: Asistente-y-Gestion-de-Botica-Inteligente
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/postgresql
+    schemas: botica
+    default-schema: botica
+    create-schemas: true
 
 server:
   port: ${SERVER_PORT:8080}
+
+app:
+  cors:
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - Accept
+    allow-credentials: true

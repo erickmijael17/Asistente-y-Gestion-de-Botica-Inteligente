@@ -1,5 +1,6 @@
-package com.botica.inteligente.producto.service;
+package com.botica.inteligente.producto.service.impl;
 
+import com.botica.inteligente.producto.service.ProductoService;
 import com.botica.inteligente.categoria.entity.Categoria;
 import com.botica.inteligente.categoria.repository.CategoriaRepository;
 import com.botica.inteligente.laboratorio.entity.Laboratorio;

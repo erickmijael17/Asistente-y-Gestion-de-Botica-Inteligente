@@ -1,6 +1,15 @@
-# Asistente y Gestion de Botica Inteligente
+# Asistente y Gestión de Botica Inteligente
 
-Backend monolitico modular para la primera fase del sistema interno de una botica.
+Backend monolítico modular para el sistema integral de una botica.
+
+## Visión del Proyecto
+El sistema permite gestionar **ventas**, **inventario**, generar **reportes** y administrar **alertas**. Está diseñado para dos tipos de usuarios:
+- **Gerente (Dueño)**: Supervisa reportes, ventas e inventario.
+- **Vendedor (Farmacéutico)**: Realiza ventas y atiende a los clientes.
+
+Adicionalmente, el sistema cuenta con un **Chatbot IA** conectado directamente a nuestra base de datos. Este chatbot permite consultar información médica (ej. "pastillas para la fiebre") y devuelve un abanico de alternativas médicas basadas en nuestro inventario. De este modo, los vendedores pueden ofrecer mayor variedad de productos a los usuarios en lugar de limitarse siempre a los mismos medicamentos conocidos.
+
+[Ver Modelado de Arquitectura C4](docs/architecture/c4-model.md)
 
 ## Tecnologias
 
@@ -118,7 +127,9 @@ Los roles de Keycloak se leen desde `realm_access.roles` y `resource_access`, y 
 - `V2__create_catalog_tables.sql`: `categorias`, `laboratorios`
 - `V3__create_product_table.sql`: `productos`
 - `V4__insert_initial_catalog_data.sql`: categorias generales y laboratorios demo
+- `V5__create_ventas_tables.sql`: Tablas de transacciones de ventas y detalles
 
-## Alcance
+## Alcance Actual
+Hasta la fecha se encuentran implementados los módulos Base (Usuarios, Seguridad, Keycloak), Catálogo (Categorías, Laboratorios, Productos) y Transaccional (Ventas). 
 
-Esta fase no implementa ventas, inventario, lotes, compras, proveedores, clientes, pagos, reportes ni chatbot.
+*Pendiente de implementar: Inventario, Lotes, Compras, Proveedores, Clientes, Pagos, Reportes y el Chatbot IA.*

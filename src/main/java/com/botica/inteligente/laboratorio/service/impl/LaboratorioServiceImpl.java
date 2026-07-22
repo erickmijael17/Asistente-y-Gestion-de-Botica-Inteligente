@@ -1,5 +1,6 @@
-package com.botica.inteligente.laboratorio.service;
+package com.botica.inteligente.laboratorio.service.impl;
 
+import com.botica.inteligente.laboratorio.service.LaboratorioService;
 import com.botica.inteligente.laboratorio.dto.request.LaboratorioCreateRequest;
 import com.botica.inteligente.laboratorio.dto.request.LaboratorioFilter;
 import com.botica.inteligente.laboratorio.dto.request.LaboratorioUpdateRequest;

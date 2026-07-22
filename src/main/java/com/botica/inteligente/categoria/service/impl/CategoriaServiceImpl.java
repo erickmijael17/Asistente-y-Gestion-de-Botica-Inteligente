@@ -1,5 +1,6 @@
-package com.botica.inteligente.categoria.service;
+package com.botica.inteligente.categoria.service.impl;
 
+import com.botica.inteligente.categoria.service.CategoriaService;
 import com.botica.inteligente.categoria.dto.request.CategoriaCreateRequest;
 import com.botica.inteligente.categoria.dto.request.CategoriaFilter;
 import com.botica.inteligente.categoria.dto.request.CategoriaUpdateRequest;
