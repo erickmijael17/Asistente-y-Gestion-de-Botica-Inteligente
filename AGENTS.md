@@ -4,7 +4,10 @@ Guia para agentes y colaboradores que trabajen en este repositorio.
 
 ## Contexto del proyecto
 
-Este proyecto es el backend de **Asistente y Gestion de Botica Inteligente**, un sistema web interno para una botica. El uso previsto es solo para el duenio y vendedores.
+Este proyecto es el backend de **Asistente y Gestión de Botica Inteligente**, un sistema web interno para una botica. 
+
+**Visión Global:**
+El sistema controlará ventas, inventario, reportes y un sistema de alertas. Existen 2 tipos de usuarios: **Gerente** (dueño) y **Vendedores** (farmacéuticos). Además, el proyecto incluye un **Chatbot IA** conectado directamente a la base de datos de productos. El chatbot será capaz de extraer información médica y sugerir alternativas; por ejemplo, si se le pregunta por "pastillas para la fiebre", buscará en el inventario y brindará opciones, permitiendo al vendedor ofrecer alternativas variadas en lugar de vender siempre el mismo medicamento.
 
 El backend es un **monolito modular** en Spring Boot. No convertir a microservicios.
 
@@ -94,6 +97,7 @@ La fase actual incluye solo:
 - Categorias
 - Laboratorios
 - Productos
+- Ventas
 - Migraciones Flyway
 - Swagger
 - Pruebas
@@ -101,7 +105,6 @@ La fase actual incluye solo:
 
 No implementar todavia:
 
-- Ventas
 - Inventario
 - Lotes
 - Compras
@@ -192,9 +195,10 @@ V1__create_base_tables.sql
 V2__create_catalog_tables.sql
 V3__create_product_table.sql
 V4__insert_initial_catalog_data.sql
+V5__create_ventas_tables.sql
 ```
 
-Para nuevas migraciones, crear una version incremental `V5__...sql`, `V6__...sql`, etc. No modificar migraciones ya aplicadas salvo que el usuario lo pida explicitamente y el entorno sea de desarrollo descartable.
+Para nuevas migraciones, crear una version incremental `V6__...sql`, `V7__...sql`, etc. No modificar migraciones ya aplicadas salvo que el usuario lo pida explicitamente y el entorno sea de desarrollo descartable.
 
 ## Configuracion
 

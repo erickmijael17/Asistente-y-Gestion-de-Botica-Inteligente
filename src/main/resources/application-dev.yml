@@ -1,19 +1,13 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/botica_inteligente_db}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/botica_inteligente_db?currentSchema=botica}
     username: ${DB_USERNAME:botica_user}
     password: ${DB_PASSWORD:botica_password}
-    driver-class-name: org.postgresql.Driver
   jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
-  flyway:
-    enabled: true
   security:
     oauth2:
       resourceserver:
@@ -35,15 +29,3 @@ app:
   cors:
     allowed-origins:
       - http://localhost:4200
-    allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - PATCH
-      - DELETE
-      - OPTIONS
-    allowed-headers:
-      - Authorization
-      - Content-Type
-      - Accept
-    allow-credentials: true

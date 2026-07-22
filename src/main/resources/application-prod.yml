@@ -1,16 +1,10 @@
 spring:
   datasource:
-    url: ${DB_URL}
+    url: ${DB_URL}?currentSchema=botica
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
   jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
     show-sql: false
-  flyway:
-    enabled: true
   security:
     oauth2:
       resourceserver:
@@ -26,15 +20,3 @@ springdoc:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
-    allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - PATCH
-      - DELETE
-      - OPTIONS
-    allowed-headers:
-      - Authorization
-      - Content-Type
-      - Accept
-    allow-credentials: true
