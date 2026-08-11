@@ -26,6 +26,7 @@ target/
 .project
 .classpath
 bin/
+/.jdks/
 
 # OS
 .DS_Store

@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:testcontainers:postgresql:16-alpine?currentSchema=botica
+    username: tc
+    password: tc
+  jpa:
+    show-sql: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/botica-inteligente-test
