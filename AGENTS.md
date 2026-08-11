@@ -8,7 +8,7 @@ El proyecto se organiza en dos carpetas principales:
 
 ```text
 backend/   -> Backend monolitico modular en Spring Boot
-frontend/  -> Frontend (por el momento vacia, aplicacion web Angular)
+frontend/  -> Frontend (aplicación web React + Vite)
 ```
 
 Todos los comandos Maven, Docker Compose y rutas de codigo mencionados en esta guia se ejecutan dentro de `backend/`.
@@ -30,8 +30,7 @@ El backend es un **monolito modular** en Spring Boot. No convertir a microservic
 - Spring Web
 - Spring Data JPA
 - Spring Security
-- OAuth 2.0 Resource Server
-- Keycloak
+- Spring Security JWT (io.jsonwebtoken)
 - PostgreSQL
 - Flyway
 - Bean Validation
@@ -100,11 +99,11 @@ No crear carpetas globales para todos los controllers, entities o repositories. 
 La fase actual incluye solo:
 
 - Configuracion general
-- Seguridad con Keycloak
+- Seguridad con JWT nativo (Spring Security)
 - Respuestas estandar
 - Manejo global de excepciones
 - Auditoria de fechas
-- Usuario de referencia de Keycloak
+- Autenticacion local con BD (entidad Usuario y encriptacion BCrypt)
 - Categorias
 - Laboratorios
 - Productos
@@ -112,7 +111,7 @@ La fase actual incluye solo:
 - Migraciones Flyway
 - Swagger
 - Pruebas
-- Docker Compose para PostgreSQL y Keycloak
+- Docker Compose para PostgreSQL
 
 No implementar todavia:
 
@@ -150,7 +149,7 @@ No implementar todavia:
 
 ## Seguridad
 
-Keycloak es el proveedor de identidad. Spring Boot funciona como OAuth 2.0 Resource Server.
+La autenticación se maneja internamente usando Spring Security y JSON Web Tokens (JWT). El backend debe generar, firmar y validar tokens JWT.
 
 Roles validos:
 
@@ -166,14 +165,12 @@ ROLE_OWNER
 ROLE_SELLER
 ```
 
-Los roles deben extraerse desde:
-
-- `realm_access.roles`
-- `resource_access`
+Los roles deben extraerse del token JWT (claim `roles` o similar) e inyectarse como autoridades en el contexto de seguridad.
 
 Rutas publicas permitidas:
 
 ```text
+/api/auth/**
 /actuator/health
 /v3/api-docs/**
 /swagger-ui/**
@@ -187,7 +184,7 @@ Reglas generales:
 
 Tambien usar `@PreAuthorize` en metodos sensibles.
 
-No almacenar contrasenas en PostgreSQL.
+Las contraseñas deben almacenarse en PostgreSQL de forma obligatoria usando BCrypt (`PasswordEncoder`).
 
 ## Base de datos y migraciones
 
@@ -231,7 +228,8 @@ SPRING_PROFILES_ACTIVE
 DB_URL
 DB_USERNAME
 DB_PASSWORD
-KEYCLOAK_ISSUER_URI
+JWT_SECRET
+JWT_EXPIRATION
 CORS_ALLOWED_ORIGINS
 ```
 
@@ -246,20 +244,12 @@ docker compose up -d
 Servicios:
 
 - `botica-postgres`
-- `botica-keycloak`
 
 PostgreSQL:
 
 ```text
 localhost:5432
 botica_inteligente_db
-```
-
-Keycloak:
-
-```text
-http://localhost:8081
-realm: botica-inteligente
 ```
 
 ## Validacion

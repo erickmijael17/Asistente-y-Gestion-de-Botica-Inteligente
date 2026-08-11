@@ -2,7 +2,7 @@ package com.botica.inteligente.producto.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,7 +11,10 @@ import com.botica.inteligente.config.CorsProperties;
 import com.botica.inteligente.producto.dto.response.ProductoResponse;
 import com.botica.inteligente.producto.enums.TipoProducto;
 import com.botica.inteligente.producto.service.ProductoService;
-import com.botica.inteligente.security.KeycloakRoleConverter;
+import com.botica.inteligente.security.JwtAuthenticationFilter;
+import com.botica.inteligente.security.JwtService;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.authentication.AuthenticationProvider;
 import com.botica.inteligente.security.SecurityConfig;
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,7 +29,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(ProductoController.class)
-@Import({SecurityConfig.class, KeycloakRoleConverter.class})
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 @EnableConfigurationProperties(CorsProperties.class)
 class ProductoSecurityTest {
 
@@ -36,24 +39,33 @@ class ProductoSecurityTest {
     @MockBean
     private ProductoService productoService;
 
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private UserDetailsService userDetailsService;
+
+    @MockBean
+    private AuthenticationProvider authenticationProvider;
+
     @Test
-    void endpointWithoutTokenReturns401() throws Exception {
+    void endpointWithoutTokenReturns403() throws Exception {
         mockMvc.perform(get("/api/v1/productos"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void sellerCanQueryProducts() throws Exception {
         when(productoService.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
 
-        mockMvc.perform(get("/api/v1/productos").with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SELLER"))))
+        mockMvc.perform(get("/api/v1/productos").with(user("test").roles("SELLER")))
                 .andExpect(status().isOk());
     }
 
     @Test
     void sellerCannotCreateProducts() throws Exception {
         mockMvc.perform(post("/api/v1/productos")
-                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SELLER")))
+                        .with(user("test").roles("SELLER"))
                         .contentType("application/json")
                         .content(validBody()))
                 .andExpect(status().isForbidden());
@@ -64,7 +76,7 @@ class ProductoSecurityTest {
         when(productoService.create(any())).thenReturn(response());
 
         mockMvc.perform(post("/api/v1/productos")
-                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_OWNER")))
+                        .with(user("owner").roles("OWNER"))
                         .contentType("application/json")
                         .content(validBody()))
                 .andExpect(status().isCreated());
