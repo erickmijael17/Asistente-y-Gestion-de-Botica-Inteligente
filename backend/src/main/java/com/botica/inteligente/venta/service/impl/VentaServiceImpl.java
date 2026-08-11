@@ -4,8 +4,8 @@ import com.botica.inteligente.producto.entity.Producto;
 import com.botica.inteligente.producto.repository.ProductoRepository;
 import com.botica.inteligente.shared.exception.ConflictException;
 import com.botica.inteligente.shared.exception.ResourceNotFoundException;
-import com.botica.inteligente.usuario.entity.UsuarioReferencia;
-import com.botica.inteligente.usuario.repository.UsuarioReferenciaRepository;
+import com.botica.inteligente.usuario.entity.Usuario;
+import com.botica.inteligente.usuario.repository.UsuarioRepository;
 import com.botica.inteligente.venta.dto.request.VentaCreateRequest;
 import com.botica.inteligente.venta.dto.request.VentaDetalleRequest;
 import com.botica.inteligente.venta.dto.request.VentaFilter;
@@ -32,8 +32,8 @@ public class VentaServiceImpl implements VentaService {
 
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
-    // Asumiendo que existe un repositorio para UsuarioReferencia
-    private final UsuarioReferenciaRepository usuarioRepository;
+    // Asumiendo que existe un repositorio para Usuario
+    private final UsuarioRepository usuarioRepository;
     private final VentaMapper ventaMapper;
 
     @Override
@@ -50,7 +50,7 @@ public class VentaServiceImpl implements VentaService {
     @Override
     @Transactional
     public VentaResponse create(VentaCreateRequest request) {
-        UsuarioReferencia usuario = usuarioRepository.findById(request.usuarioId())
+        Usuario usuario = usuarioRepository.findById(request.usuarioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         Venta venta = new Venta();

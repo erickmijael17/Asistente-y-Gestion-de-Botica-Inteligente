@@ -17,18 +17,7 @@ services:
       timeout: 5s
       retries: 5
 
-  botica-keycloak:
-    image: quay.io/keycloak/keycloak:25.0
-    container_name: botica-keycloak
-    restart: unless-stopped
-    command: start-dev --import-realm
-    environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-    ports:
-      - "8081:8080"
-    volumes:
-      - ./docker/keycloak:/opt/keycloak/data/import:ro
+
 
 volumes:
   botica_postgres_data:

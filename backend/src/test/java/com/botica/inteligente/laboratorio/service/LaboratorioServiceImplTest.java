@@ -10,6 +10,7 @@ import com.botica.inteligente.laboratorio.dto.request.LaboratorioUpdateRequest;
 import com.botica.inteligente.laboratorio.entity.Laboratorio;
 import com.botica.inteligente.laboratorio.mapper.LaboratorioMapperImpl;
 import com.botica.inteligente.laboratorio.repository.LaboratorioRepository;
+import com.botica.inteligente.laboratorio.service.impl.LaboratorioServiceImpl;
 import com.botica.inteligente.shared.exception.ConflictException;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

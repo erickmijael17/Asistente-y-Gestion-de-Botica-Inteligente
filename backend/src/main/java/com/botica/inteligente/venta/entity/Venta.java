@@ -1,7 +1,7 @@
 package com.botica.inteligente.venta.entity;
 
 import com.botica.inteligente.shared.audit.AuditableEntity;
-import com.botica.inteligente.usuario.entity.UsuarioReferencia;
+import com.botica.inteligente.usuario.entity.Usuario;
 import com.botica.inteligente.venta.enums.EstadoVenta;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -35,7 +35,7 @@ public class Venta extends AuditableEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "usuario_id", nullable = false)
-    private UsuarioReferencia usuario;
+    private Usuario usuario;
 
     @Column(name = "fecha_venta", nullable = false)
     private LocalDateTime fechaVenta;

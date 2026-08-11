@@ -13,6 +13,7 @@ import com.botica.inteligente.categoria.entity.Categoria;
 import com.botica.inteligente.categoria.mapper.CategoriaMapper;
 import com.botica.inteligente.categoria.mapper.CategoriaMapperImpl;
 import com.botica.inteligente.categoria.repository.CategoriaRepository;
+import com.botica.inteligente.categoria.service.impl.CategoriaServiceImpl;
 import com.botica.inteligente.shared.exception.ConflictException;
 import com.botica.inteligente.shared.exception.ResourceNotFoundException;
 import java.util.Optional;

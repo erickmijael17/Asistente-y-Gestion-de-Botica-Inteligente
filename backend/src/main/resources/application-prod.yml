@@ -6,10 +6,9 @@ spring:
   jpa:
     show-sql: false
   security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI}
+    jwt:
+      secret: ${JWT_SECRET}
+      expiration: ${JWT_EXPIRATION}
 
 springdoc:
   swagger-ui:
