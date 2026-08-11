@@ -1,7 +1,7 @@
 package com.botica.inteligente.venta.controller;
 
 import com.botica.inteligente.shared.response.ApiResponse;
-import com.botica.inteligente.shared.response.PaginatedResponse;
+import com.botica.inteligente.shared.response.PageResponse;
 import com.botica.inteligente.venta.dto.request.VentaCreateRequest;
 import com.botica.inteligente.venta.dto.request.VentaFilter;
 import com.botica.inteligente.venta.dto.response.VentaResponse;
@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,10 +31,10 @@ public class VentaController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('OWNER', 'SELLER')")
-    public ApiResponse<PaginatedResponse<VentaResponse>> findAll(
-            VentaFilter filter,
-            @PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.ok(PaginatedResponse.of(ventaService.findAll(filter, pageable)));
+    public ApiResponse<PageResponse<VentaResponse>> findAll(
+            @ParameterObject VentaFilter filter,
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
+        return ApiResponse.ok("Ventas obtenidas correctamente", PageResponse.from(ventaService.findAll(filter, pageable)));
     }
 
     @GetMapping("/{id}")

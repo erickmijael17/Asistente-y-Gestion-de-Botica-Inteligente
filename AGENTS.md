@@ -2,6 +2,17 @@
 
 Guia para agentes y colaboradores que trabajen en este repositorio.
 
+## Estructura del repositorio
+
+El proyecto se organiza en dos carpetas principales:
+
+```text
+backend/   -> Backend monolitico modular en Spring Boot
+frontend/  -> Frontend (por el momento vacia, aplicacion web Angular)
+```
+
+Todos los comandos Maven, Docker Compose y rutas de codigo mencionados en esta guia se ejecutan dentro de `backend/`.
+
 ## Contexto del proyecto
 
 Este proyecto es el backend de **Asistente y Gestión de Botica Inteligente**, un sistema web interno para una botica. 
@@ -51,7 +62,7 @@ BoticaInteligenteApplication
 Mantener una arquitectura monolitica modular organizada por funcionalidad:
 
 ```text
-src/main/java/com/botica/inteligente
+backend/src/main/java/com/botica/inteligente
 ├── config
 ├── security
 ├── shared
@@ -185,7 +196,7 @@ Usar Flyway para cambios de esquema.
 Ubicacion:
 
 ```text
-src/main/resources/db/migration
+backend/src/main/resources/db/migration
 ```
 
 Migraciones existentes:
@@ -296,7 +307,7 @@ Mantener ignorados:
 ```gitignore
 .idea/
 *.iml
-target/
+backend/target/
 .env
 ```
 
@@ -312,7 +323,7 @@ No versionar:
 Antes de modificar:
 
 1. Revisar estructura actual.
-2. Revisar `pom.xml` y perfiles si el cambio toca configuracion.
+2. Revisar `backend/pom.xml` y perfiles si el cambio toca configuracion.
 3. Identificar archivos existentes relacionados.
 4. Evitar reemplazar codigo funcional sin motivo.
 5. Mantener el alcance de la fase actual.
