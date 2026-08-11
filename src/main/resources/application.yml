@@ -1,8 +1,0 @@
-spring:
-  application:
-    name: Asistente-y-Gestion-de-Botica-Inteligente
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
-
-server:
-  port: ${SERVER_PORT:8080}

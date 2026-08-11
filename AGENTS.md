@@ -2,9 +2,23 @@
 
 Guia para agentes y colaboradores que trabajen en este repositorio.
 
+## Estructura del repositorio
+
+El proyecto se organiza en dos carpetas principales:
+
+```text
+backend/   -> Backend monolitico modular en Spring Boot
+frontend/  -> Frontend (por el momento vacia, aplicacion web Angular)
+```
+
+Todos los comandos Maven, Docker Compose y rutas de codigo mencionados en esta guia se ejecutan dentro de `backend/`.
+
 ## Contexto del proyecto
 
-Este proyecto es el backend de **Asistente y Gestion de Botica Inteligente**, un sistema web interno para una botica. El uso previsto es solo para el duenio y vendedores.
+Este proyecto es el backend de **Asistente y Gestión de Botica Inteligente**, un sistema web interno para una botica. 
+
+**Visión Global:**
+El sistema controlará ventas, inventario, reportes y un sistema de alertas. Existen 2 tipos de usuarios: **Gerente** (dueño) y **Vendedores** (farmacéuticos). Además, el proyecto incluye un **Chatbot IA** conectado directamente a la base de datos de productos. El chatbot será capaz de extraer información médica y sugerir alternativas; por ejemplo, si se le pregunta por "pastillas para la fiebre", buscará en el inventario y brindará opciones, permitiendo al vendedor ofrecer alternativas variadas en lugar de vender siempre el mismo medicamento.
 
 El backend es un **monolito modular** en Spring Boot. No convertir a microservicios.
 
@@ -48,7 +62,7 @@ BoticaInteligenteApplication
 Mantener una arquitectura monolitica modular organizada por funcionalidad:
 
 ```text
-src/main/java/com/botica/inteligente
+backend/src/main/java/com/botica/inteligente
 ├── config
 ├── security
 ├── shared
@@ -94,6 +108,7 @@ La fase actual incluye solo:
 - Categorias
 - Laboratorios
 - Productos
+- Ventas
 - Migraciones Flyway
 - Swagger
 - Pruebas
@@ -101,7 +116,6 @@ La fase actual incluye solo:
 
 No implementar todavia:
 
-- Ventas
 - Inventario
 - Lotes
 - Compras
@@ -182,7 +196,7 @@ Usar Flyway para cambios de esquema.
 Ubicacion:
 
 ```text
-src/main/resources/db/migration
+backend/src/main/resources/db/migration
 ```
 
 Migraciones existentes:
@@ -192,9 +206,10 @@ V1__create_base_tables.sql
 V2__create_catalog_tables.sql
 V3__create_product_table.sql
 V4__insert_initial_catalog_data.sql
+V5__create_ventas_tables.sql
 ```
 
-Para nuevas migraciones, crear una version incremental `V5__...sql`, `V6__...sql`, etc. No modificar migraciones ya aplicadas salvo que el usuario lo pida explicitamente y el entorno sea de desarrollo descartable.
+Para nuevas migraciones, crear una version incremental `V6__...sql`, `V7__...sql`, etc. No modificar migraciones ya aplicadas salvo que el usuario lo pida explicitamente y el entorno sea de desarrollo descartable.
 
 ## Configuracion
 
@@ -292,7 +307,7 @@ Mantener ignorados:
 ```gitignore
 .idea/
 *.iml
-target/
+backend/target/
 .env
 ```
 
@@ -308,7 +323,7 @@ No versionar:
 Antes de modificar:
 
 1. Revisar estructura actual.
-2. Revisar `pom.xml` y perfiles si el cambio toca configuracion.
+2. Revisar `backend/pom.xml` y perfiles si el cambio toca configuracion.
 3. Identificar archivos existentes relacionados.
 4. Evitar reemplazar codigo funcional sin motivo.
 5. Mantener el alcance de la fase actual.
