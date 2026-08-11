@@ -1,6 +1,9 @@
 # Asistente y Gestión de Botica Inteligente
 
-Backend monolítico modular para el sistema integral de una botica.
+Sistema web para la gestión integral de una botica, organizado en dos componentes:
+
+- `backend/` — Backend monolítico modular en Spring Boot
+- `frontend/` — Aplicación web Angular (por el momento vacía)
 
 ## Visión del Proyecto
 El sistema permite gestionar **ventas**, **inventario**, generar **reportes** y administrar **alertas**. Está diseñado para dos tipos de usuarios:
@@ -9,7 +12,7 @@ El sistema permite gestionar **ventas**, **inventario**, generar **reportes** y 
 
 Adicionalmente, el sistema cuenta con un **Chatbot IA** conectado directamente a nuestra base de datos. Este chatbot permite consultar información médica (ej. "pastillas para la fiebre") y devuelve un abanico de alternativas médicas basadas en nuestro inventario. De este modo, los vendedores pueden ofrecer mayor variedad de productos a los usuarios en lugar de limitarse siempre a los mismos medicamentos conocidos.
 
-[Ver Modelado de Arquitectura C4](docs/architecture/c4-model.md)
+[Ver Modelado de Arquitectura C4](backend/docs/architecture/c4-model.md)
 
 ## Tecnologias
 
@@ -27,8 +30,8 @@ Adicionalmente, el sistema cuenta con un **Chatbot IA** conectado directamente a
 
 ## Levantar infraestructura
 
-1. Crear archivo `.env` desde `.env.example`.
-2. Levantar PostgreSQL y Keycloak:
+1. Crear archivo `.env` desde `backend/.env.example`.
+2. Levantar PostgreSQL y Keycloak (desde `backend/`):
 
 ```bash
 docker compose up -d
@@ -51,7 +54,7 @@ mvn clean test
 mvn spring-boot:run
 ```
 
-Perfil por defecto: `dev`.
+Perfil por defecto: `dev`. Ejecutar estos comandos dentro de `backend/`.
 
 Swagger:
 
