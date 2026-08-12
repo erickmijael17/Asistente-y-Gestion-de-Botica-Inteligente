@@ -1,62 +1,32 @@
-import { useState, useRef, useEffect, KeyboardEvent } from 'react'
+import { useState, useRef, useEffect, KeyboardEvent, useCallback } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
+import { useAuth } from './context/AuthContext'
+import { authService } from './services/auth.service'
+import { productoService } from './services/producto.service'
+import { categoriaService } from './services/categoria.service'
+import { laboratorioService } from './services/laboratorio.service'
+import { ventaService } from './services/venta.service'
+import type {
+  PantallaApp, ProductoResumen, ItemCarrito, MensajeChat, Venta, Categoria, Laboratorio
+} from './types/domain.types'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type Screen = 'login' | 'dashboard' | 'pos' | 'inventory'
-type Role = 'manager' | 'seller'
-type User = { name: string; role: Role }
-
-interface Product {
-  id: number; name: string; category: string; lab: string
-  price: number; stock: number; expiry: string; active: boolean
+// Respuestas simuladas del chatbot (módulo IA pendiente de implementación)
+const RESPUESTAS_ASISTENTE: Record<string, { texto: string; palabrasClave: string[] }> = {
+  default: { texto: 'He analizado el catálogo disponible. Aquí tienes opciones relevantes:', palabrasClave: [] },
+  fiebre: { texto: 'Para fiebre y dolor recomiendo evaluar estas opciones del catálogo:', palabrasClave: ['fiebre', 'tos', 'dolor'] },
+  antibiotico: { texto: 'Para infecciones bacterianas, estos productos están registrados:', palabrasClave: ['antibio', 'infec'] },
+  gastro: { texto: 'Para síntomas gastrointestinales:', palabrasClave: ['estomago', 'gastro', 'acidez'] },
+  alergia: { texto: 'Para cuadros alérgicos:', palabrasClave: ['alergi', 'rinitis'] },
 }
 
-interface CartItem { product: Product; qty: number }
-interface ChatMessage { role: 'user' | 'bot'; text: string; suggestions?: Product[] }
+const formatearMoneda = (valor: number) => `S/ ${valor.toFixed(2)}`
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+const formatearFecha = (fecha: string) =>
+  new Date(fecha).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-const PRODUCTS: Product[] = [
-  { id: 1, name: 'Paracetamol 500mg', category: 'Analgésicos', lab: 'Bayer', price: 3.50, stock: 142, expiry: '2026-08-15', active: true },
-  { id: 2, name: 'Ibuprofeno 400mg', category: 'Analgésicos', lab: 'Farmindustria', price: 5.20, stock: 87, expiry: '2026-11-20', active: true },
-  { id: 3, name: 'Amoxicilina 500mg', category: 'Antibióticos', lab: 'GlaxoSmithKline', price: 12.80, stock: 34, expiry: '2025-12-01', active: true },
-  { id: 4, name: 'Loratadina 10mg', category: 'Antihistamínicos', lab: 'Novartis', price: 6.90, stock: 56, expiry: '2027-03-10', active: true },
-  { id: 5, name: 'Omeprazol 20mg', category: 'Gastrointestinal', lab: 'AstraZeneca', price: 8.40, stock: 9, expiry: '2026-06-30', active: true },
-  { id: 6, name: 'Metformina 850mg', category: 'Antidiabéticos', lab: 'Merck', price: 14.60, stock: 23, expiry: '2026-09-22', active: true },
-  { id: 7, name: 'Atorvastatina 20mg', category: 'Cardiovascular', lab: 'Pfizer', price: 18.30, stock: 5, expiry: '2025-11-15', active: true },
-  { id: 8, name: 'Clonazepam 0.5mg', category: 'Neurológico', lab: 'Roche', price: 22.50, stock: 0, expiry: '2026-07-08', active: false },
-  { id: 9, name: 'Ciprofloxacino 500mg', category: 'Antibióticos', lab: 'Bayer', price: 16.70, stock: 41, expiry: '2027-01-14', active: true },
-  { id: 10, name: 'Azitromicina 500mg', category: 'Antibióticos', lab: 'Pfizer', price: 19.90, stock: 28, expiry: '2026-10-05', active: true },
-  { id: 11, name: 'Dexametasona 4mg', category: 'Corticosteroides', lab: 'Merck', price: 7.20, stock: 62, expiry: '2027-04-18', active: true },
-  { id: 12, name: 'Ranitidina 150mg', category: 'Gastrointestinal', lab: 'GSK', price: 4.80, stock: 3, expiry: '2025-09-30', active: true },
-]
-
-const SALES_DATA = [
-  { day: 'Lun', ventas: 1840 }, { day: 'Mar', ventas: 2210 },
-  { day: 'Mié', ventas: 1960 }, { day: 'Jue', ventas: 2780 },
-  { day: 'Vie', ventas: 3120 }, { day: 'Sáb', ventas: 2950 },
-  { day: 'Dom', ventas: 1430 },
-]
-
-const RECENT_SALES = [
-  { id: 'VTA-0891', date: '11/08/2026 14:32', total: 'S/ 47.60', status: 'Completada' },
-  { id: 'VTA-0890', date: '11/08/2026 14:18', total: 'S/ 12.80', status: 'Completada' },
-  { id: 'VTA-0889', date: '11/08/2026 13:55', total: 'S/ 89.20', status: 'Anulada' },
-  { id: 'VTA-0888', date: '11/08/2026 13:41', total: 'S/ 33.40', status: 'Completada' },
-  { id: 'VTA-0887', date: '11/08/2026 12:07', total: 'S/ 156.90', status: 'Completada' },
-  { id: 'VTA-0886', date: '11/08/2026 11:48', total: 'S/ 22.10', status: 'Completada' },
-]
-
-const AI_RESPONSES: Record<string, { text: string; ids: number[] }> = {
-  default: { text: 'He analizado el stock disponible. Aquí tienes opciones relevantes para el paciente:', ids: [1, 2, 4] },
-  fiebre: { text: 'Para fiebre y tos recomiendo evaluar estas opciones que están en stock:', ids: [1, 2, 11] },
-  antibiotico: { text: 'Para infecciones bacterianas, aquí los antibióticos disponibles:', ids: [3, 9, 10] },
-  gastro: { text: 'Para síntomas gastrointestinales, estas son las opciones en stock:', ids: [5, 12] },
-  alergia: { text: 'Para cuadros alérgicos, te sugiero:', ids: [4] },
-}
+const esGerente = (roles: string) => roles.includes('ROLE_OWNER')
 
 // ─── Utility Components ───────────────────────────────────────────────────────
 
@@ -75,14 +45,16 @@ function Badge({ label, variant }: { label: string; variant: 'green' | 'red' | '
   )
 }
 
-function Sidebar({ screen, role, onNav, onLogout }: {
-  screen: Screen; role: Role; onNav: (s: Screen) => void; onLogout: () => void
+function Sidebar({ pantalla, roles, nombreUsuario, onNav, onLogout }: {
+  pantalla: PantallaApp; roles: string; nombreUsuario: string
+  onNav: (p: PantallaApp) => void; onLogout: () => void
 }) {
+  const gerente = esGerente(roles)
   const items = [
-    { id: 'dashboard', label: 'Dashboard', icon: ChartIcon, roles: ['manager'] },
-    { id: 'pos', label: 'Punto de Venta', icon: CashIcon, roles: ['manager', 'seller'] },
-    { id: 'inventory', label: 'Catálogo', icon: BoxIcon, roles: ['manager', 'seller'] },
-  ] as const
+    { id: 'panel' as const, label: 'Dashboard', icon: ChartIcon, visible: gerente },
+    { id: 'punto-venta' as const, label: 'Punto de Venta', icon: CashIcon, visible: true },
+    { id: 'catalogo' as const, label: 'Catálogo', icon: BoxIcon, visible: true },
+  ]
 
   return (
     <aside style={{ width: 220, minWidth: 220 }} className="h-screen flex flex-col bg-white border-r border-slate-200">
@@ -99,13 +71,13 @@ function Sidebar({ screen, role, onNav, onLogout }: {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {items.filter(i => i.roles.includes(role)).map(item => {
+        {items.filter(i => i.visible).map(item => {
           const Icon = item.icon
-          const active = screen === item.id
+          const active = pantalla === item.id
           return (
             <button
               key={item.id}
-              onClick={() => onNav(item.id as Screen)}
+              onClick={() => onNav(item.id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
                   ? 'bg-emerald-50 text-emerald-700'
@@ -121,8 +93,8 @@ function Sidebar({ screen, role, onNav, onLogout }: {
 
       <div className="px-3 py-4 border-t border-slate-100">
         <div className="px-3 py-2 mb-1">
-          <div className="text-xs font-medium text-slate-900">{role === 'manager' ? 'Ana García' : 'Carlos Ríos'}</div>
-          <div className="text-xs text-slate-400 capitalize">{role === 'manager' ? 'Gerente' : 'Vendedor'}</div>
+          <div className="text-xs font-medium text-slate-900">{nombreUsuario}</div>
+          <div className="text-xs text-slate-400">{gerente ? 'Gerente' : 'Vendedor'}</div>
         </div>
         <button
           onClick={onLogout}
@@ -138,13 +110,25 @@ function Sidebar({ screen, role, onNav, onLogout }: {
 
 // ─── Screen: Login ────────────────────────────────────────────────────────────
 
-function LoginScreen({ onLogin }: { onLogin: (role: Role) => void }) {
-  const [loading, setLoading] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<Role>('seller')
+function LoginScreen({ onLogin }: { onLogin: (roles: string) => void }) {
+  const { iniciarSesion } = useAuth()
+  const [cargando, setCargando] = useState(false)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
 
-  const handleLogin = () => {
-    setLoading(true)
-    setTimeout(() => { setLoading(false); onLogin(selectedRole) }, 1400)
+  const handleLogin = async () => {
+    setError('')
+    setCargando(true)
+    try {
+      const respuesta = await authService.login({ username, password })
+      iniciarSesion(respuesta.token, respuesta.userId, respuesta.username, respuesta.roles)
+      onLogin(respuesta.roles)
+    } catch {
+      setError('Credenciales inválidas. Verifique usuario y contraseña.')
+    } finally {
+      setCargando(false)
+    }
   }
 
   return (
@@ -171,32 +155,17 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role) => void }) {
             <p className="text-sm text-slate-400 text-center mt-1">Sistema de Gestión Farmacéutica</p>
           </div>
 
-          {/* Role selector */}
-          <div className="mb-5">
-            <label className="block text-xs font-600 text-slate-500 mb-2 uppercase tracking-wide">Ingresar como</label>
-            <div className="grid grid-cols-2 gap-2">
-              {(['manager', 'seller'] as Role[]).map(r => (
-                <button
-                  key={r}
-                  onClick={() => setSelectedRole(r)}
-                  className={`py-2.5 px-3 rounded-lg text-sm font-medium border transition-all ${
-                    selectedRole === r
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {r === 'manager' ? '👤 Gerente' : '💊 Vendedor'}
-                </button>
-              ))}
-            </div>
-          </div>
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+          )}
 
           <div className="space-y-4 mb-6">
             <div>
               <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Usuario</label>
               <input
                 type="text"
-                defaultValue={selectedRole === 'manager' ? 'ana.garcia' : 'carlos.rios'}
+                value={username}
+                onChange={e => setUsername(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-800 bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all outline-none"
               />
             </div>
@@ -204,7 +173,9 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role) => void }) {
               <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Contraseña</label>
               <input
                 type="password"
-                defaultValue="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
                 className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-800 bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all outline-none"
               />
             </div>
@@ -212,28 +183,28 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role) => void }) {
 
           <button
             onClick={handleLogin}
-            disabled={loading}
+            disabled={cargando || !username || !password}
             className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-600 transition-all shadow-sm shadow-emerald-200 disabled:opacity-70 flex items-center justify-center gap-2"
           >
-            {loading ? (
+            {cargando ? (
               <>
                 <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                 </svg>
-                Autenticando con Keycloak…
+                Autenticando…
               </>
             ) : (
               <>
-                <KeycloakIcon />
-                Iniciar Sesión con Credenciales
+                <LockIcon />
+                Iniciar Sesión
               </>
             )}
           </button>
 
           <p className="text-center text-xs text-slate-400 mt-4 flex items-center justify-center gap-1.5">
             <svg width="12" height="12" fill="none" viewBox="0 0 16 16"><path d="M8 1a4 4 0 014 4v2H4V5a4 4 0 014-4zm5 6H3a1 1 0 00-1 1v6a1 1 0 001 1h10a1 1 0 001-1V8a1 1 0 00-1-1z" fill="#94A3B8" /></svg>
-            Protegido por OAuth2 / Keycloak
+            Autenticación segura con JWT
           </p>
         </div>
       </div>
@@ -243,12 +214,23 @@ function LoginScreen({ onLogin }: { onLogin: (role: Role) => void }) {
 
 // ─── Screen: Dashboard ────────────────────────────────────────────────────────
 
-function DashboardScreen() {
+function DashboardScreen({ ventas, productos, cargando }: {
+  ventas: Venta[]; productos: ProductoResumen[]; cargando: boolean
+}) {
+  const ventasCompletadas = ventas.filter(v => v.estado === 'COMPLETADA')
+  const totalDia = ventasCompletadas.reduce((s, v) => s + v.total, 0)
+  const productosInactivos = productos.filter(p => !p.estado).length
+
+  const datosGrafico = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dia, i) => ({
+    day: dia,
+    ventas: ventasCompletadas[i]?.total ?? 0,
+  }))
+
   const kpis = [
-    { label: 'Ventas del Día', value: 'S/ 3,847.20', sub: '+12.4% vs ayer', icon: '💰', color: 'emerald' },
-    { label: 'Bajo Stock', value: '4 productos', sub: 'Requieren reposición', icon: '⚠️', color: 'amber' },
-    { label: 'Por Vencer', value: '3 productos', sub: 'Próximos 30 días', icon: '📅', color: 'red' },
-    { label: 'Ventas del Mes', value: 'S/ 82,410', sub: 'Meta: S/ 90,000', icon: '📈', color: 'blue' },
+    { label: 'Ventas Recientes', value: formatearMoneda(totalDia), sub: `${ventasCompletadas.length} transacciones`, icon: '💰', color: 'emerald' },
+    { label: 'Productos Inactivos', value: `${productosInactivos}`, sub: 'Revisar catálogo', icon: '⚠️', color: 'amber' },
+    { label: 'Catálogo Activo', value: `${productos.filter(p => p.estado).length}`, sub: 'Productos habilitados', icon: '📦', color: 'blue' },
+    { label: 'Total Ventas', value: `${ventas.length}`, sub: 'Registradas en el sistema', icon: '📈', color: 'blue' },
   ]
 
   const colorMap: Record<string, string> = {
@@ -260,6 +242,7 @@ function DashboardScreen() {
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
+      {cargando && <p className="text-sm text-slate-400 mb-4">Cargando datos del panel…</p>}
       <div className="mb-6">
         <h1 style={{ fontFamily: 'DM Sans, sans-serif' }} className="text-2xl font-700 text-slate-900">Dashboard</h1>
         <p className="text-sm text-slate-400 mt-0.5">Lunes, 11 de agosto de 2026 · Turno mañana</p>
@@ -290,7 +273,7 @@ function DashboardScreen() {
             <Badge label="Esta semana" variant="green" />
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={SALES_DATA} barSize={28}>
+            <BarChart data={datosGrafico} barSize={28}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={v => `${v/1000}k`} />
@@ -305,18 +288,21 @@ function DashboardScreen() {
 
         {/* Alerts */}
         <div className="col-span-2 bg-white rounded-xl border border-slate-100 shadow-sm p-5">
-          <h2 className="text-sm font-600 text-slate-900 mb-4">Alertas de Stock</h2>
+          <h2 className="text-sm font-600 text-slate-900 mb-4">Productos Inactivos</h2>
           <div className="space-y-3">
-            {PRODUCTS.filter(p => p.stock < 10 || !p.active).slice(0, 5).map(p => (
+            {productos.filter(p => !p.estado).slice(0, 5).map(p => (
               <div key={p.id} className="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${p.stock === 0 ? 'bg-red-500' : p.stock < 10 ? 'bg-amber-500' : 'bg-slate-200'}`} />
+                <div className="w-2 h-2 rounded-full flex-shrink-0 bg-red-500" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-500 text-slate-800 truncate">{p.name}</div>
-                  <div className="text-xs text-slate-400">{p.stock === 0 ? 'Sin stock' : `${p.stock} unid. restantes`}</div>
+                  <div className="text-xs font-500 text-slate-800 truncate">{p.nombreComercial}</div>
+                  <div className="text-xs text-slate-400">{p.laboratorioNombre}</div>
                 </div>
-                <Badge label={p.stock === 0 ? 'Crítico' : 'Bajo'} variant={p.stock === 0 ? 'red' : 'yellow'} />
+                <Badge label="Inactivo" variant="red" />
               </div>
             ))}
+            {productos.filter(p => !p.estado).length === 0 && (
+              <p className="text-xs text-slate-400">Todos los productos están activos.</p>
+            )}
           </div>
         </div>
       </div>
@@ -336,17 +322,17 @@ function DashboardScreen() {
             </tr>
           </thead>
           <tbody>
-            {RECENT_SALES.map((s, i) => (
-              <tr key={s.id} className={`border-b border-slate-50 hover:bg-slate-50/60 transition-colors ${i === RECENT_SALES.length - 1 ? 'border-0' : ''}`}>
+            {ventas.slice(0, 6).map((s, i) => (
+              <tr key={s.id} className={`border-b border-slate-50 hover:bg-slate-50/60 transition-colors ${i === ventas.length - 1 ? 'border-0' : ''}`}>
                 <td className="px-6 py-3.5">
-                  <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-xs font-500 text-slate-700">{s.id}</span>
+                  <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-xs font-500 text-slate-700">VTA-{String(s.id).padStart(4, '0')}</span>
                 </td>
-                <td className="px-6 py-3.5 text-xs text-slate-500">{s.date}</td>
+                <td className="px-6 py-3.5 text-xs text-slate-500">{formatearFecha(s.fechaVenta)}</td>
                 <td className="px-6 py-3.5">
-                  <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-slate-800">{s.total}</span>
+                  <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-slate-800">{formatearMoneda(s.total)}</span>
                 </td>
                 <td className="px-6 py-3.5">
-                  <Badge label={s.status} variant={s.status === 'Completada' ? 'green' : 'red'} />
+                  <Badge label={s.estado === 'COMPLETADA' ? 'Completada' : 'Anulada'} variant={s.estado === 'COMPLETADA' ? 'green' : 'red'} />
                 </td>
                 <td className="px-6 py-3.5">
                   <button className="text-xs text-slate-400 hover:text-slate-600">Ver →</button>
@@ -356,7 +342,7 @@ function DashboardScreen() {
           </tbody>
         </table>
         <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between">
-          <span className="text-xs text-slate-400">Mostrando 6 de 891 ventas</span>
+          <span className="text-xs text-slate-400">Mostrando {Math.min(ventas.length, 6)} de {ventas.length} ventas</span>
           <div className="flex gap-1">
             {[1, 2, 3, '…', 45].map((p, i) => (
               <button key={i} className={`w-7 h-7 text-xs rounded-md ${p === 1 ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
@@ -372,62 +358,88 @@ function DashboardScreen() {
 
 // ─── Screen: POS ──────────────────────────────────────────────────────────────
 
-function POSScreen() {
+function POSScreen({ productos, usuarioId, onVentaRegistrada }: {
+  productos: ProductoResumen[]; usuarioId: number; onVentaRegistrada: () => void
+}) {
   const [query, setQuery] = useState('')
-  const [cart, setCart] = useState<CartItem[]>([])
+  const [carrito, setCarrito] = useState<ItemCarrito[]>([])
   const [chatInput, setChatInput] = useState('')
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'bot', text: '¡Hola! Soy tu asistente IA. Cuéntame los síntomas del paciente o pregúntame por algún medicamento específico.' }
+  const [mensajes, setMensajes] = useState<MensajeChat[]>([
+    { rol: 'asistente', texto: '¡Hola! Soy tu asistente IA. Cuéntame los síntomas del paciente o pregúntame por algún medicamento específico.' }
   ])
   const [chatLoading, setChatLoading] = useState(false)
+  const [procesandoVenta, setProcesandoVenta] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { searchRef.current?.focus() }, [])
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [mensajes])
 
-  const filtered = query.length >= 2
-    ? PRODUCTS.filter(p => p.active && p.stock > 0 && p.name.toLowerCase().includes(query.toLowerCase()))
+  const filtrados = query.length >= 2
+    ? productos.filter(p => p.estado && p.nombreComercial.toLowerCase().includes(query.toLowerCase()))
     : []
 
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const ex = prev.find(i => i.product.id === product.id)
-      if (ex) return prev.map(i => i.product.id === product.id ? { ...i, qty: i.qty + 1 } : i)
-      return [...prev, { product, qty: 1 }]
+  const agregarAlCarrito = (producto: ProductoResumen) => {
+    setCarrito(prev => {
+      const existente = prev.find(i => i.producto.id === producto.id)
+      if (existente) return prev.map(i => i.producto.id === producto.id ? { ...i, cantidad: i.cantidad + 1 } : i)
+      return [...prev, { producto, cantidad: 1 }]
     })
     setQuery('')
     searchRef.current?.focus()
   }
 
-  const updateQty = (id: number, qty: number) => {
-    if (qty < 1) setCart(prev => prev.filter(i => i.product.id !== id))
-    else setCart(prev => prev.map(i => i.product.id === id ? { ...i, qty } : i))
+  const actualizarCantidad = (id: number, cantidad: number) => {
+    if (cantidad < 1) setCarrito(prev => prev.filter(i => i.producto.id !== id))
+    else setCarrito(prev => prev.map(i => i.producto.id === id ? { ...i, cantidad } : i))
   }
 
-  const total = cart.reduce((s, i) => s + i.product.price * i.qty, 0)
+  const total = carrito.reduce((s, i) => s + i.producto.precioVenta * i.cantidad, 0)
 
   const handleSearchKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && filtered.length === 1) addToCart(filtered[0])
+    if (e.key === 'Enter' && filtrados.length === 1) agregarAlCarrito(filtrados[0])
   }
 
-  const sendChat = async () => {
+  const registrarVenta = async () => {
+    if (carrito.length === 0) return
+    setProcesandoVenta(true)
+    try {
+      await ventaService.crear({
+        usuarioId,
+        detalles: carrito.map(item => ({
+          productoId: item.producto.id,
+          cantidad: item.cantidad,
+          precioUnitario: item.producto.precioVenta,
+        })),
+      })
+      setCarrito([])
+      onVentaRegistrada()
+    } catch {
+      alert('No se pudo registrar la venta. Verifique la conexión con el backend.')
+    } finally {
+      setProcesandoVenta(false)
+    }
+  }
+
+  const enviarChat = async () => {
     if (!chatInput.trim()) return
-    const userMsg = chatInput.trim()
+    const mensajeUsuario = chatInput.trim()
     setChatInput('')
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }])
+    setMensajes(prev => [...prev, { rol: 'usuario', texto: mensajeUsuario }])
     setChatLoading(true)
-    await new Promise(r => setTimeout(r, 1200))
+    await new Promise(r => setTimeout(r, 800))
 
-    const lower = userMsg.toLowerCase()
-    let res = AI_RESPONSES.default
-    if (lower.includes('fiebre') || lower.includes('tos') || lower.includes('dolor')) res = AI_RESPONSES.fiebre
-    else if (lower.includes('antibio') || lower.includes('infec')) res = AI_RESPONSES.antibiotico
-    else if (lower.includes('estomago') || lower.includes('gastro') || lower.includes('acidez')) res = AI_RESPONSES.gastro
-    else if (lower.includes('alergi') || lower.includes('rinitis')) res = AI_RESPONSES.alergia
+    const lower = mensajeUsuario.toLowerCase()
+    let respuesta = RESPUESTAS_ASISTENTE.default
+    for (const [, config] of Object.entries(RESPUESTAS_ASISTENTE)) {
+      if (config.palabrasClave.some(p => lower.includes(p))) {
+        respuesta = config
+        break
+      }
+    }
 
-    const suggestions = PRODUCTS.filter(p => res.ids.includes(p.id) && p.stock > 0)
-    setMessages(prev => [...prev, { role: 'bot', text: res.text, suggestions }])
+    const sugerencias = productos.filter(p => p.estado).slice(0, 3)
+    setMensajes(prev => [...prev, { rol: 'asistente', texto: respuesta.texto, sugerencias }])
     setChatLoading(false)
   }
 
@@ -464,18 +476,17 @@ function POSScreen() {
         </div>
 
         {/* Search results dropdown */}
-        {filtered.length > 0 && (
+        {filtrados.length > 0 && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden -mt-1">
-            {filtered.slice(0, 5).map(p => (
-              <button key={p.id} onClick={() => addToCart(p)}
+            {filtrados.slice(0, 5).map(p => (
+              <button key={p.id} onClick={() => agregarAlCarrito(p)}
                 className="w-full flex items-center gap-4 px-4 py-3 hover:bg-emerald-50 transition-colors border-b border-slate-50 last:border-0 text-left">
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-500 text-slate-800">{p.name}</div>
-                  <div className="text-xs text-slate-400">{p.category} · {p.lab}</div>
+                  <div className="text-sm font-500 text-slate-800">{p.nombreComercial}</div>
+                  <div className="text-xs text-slate-400">{p.categoriaNombre} · {p.laboratorioNombre}</div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-emerald-700">S/ {p.price.toFixed(2)}</div>
-                  <div className="text-xs text-slate-400">{p.stock} en stock</div>
+                  <div style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-emerald-700">{formatearMoneda(p.precioVenta)}</div>
                 </div>
                 <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-300">+</div>
               </button>
@@ -487,10 +498,10 @@ function POSScreen() {
         <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
             <span className="text-sm font-600 text-slate-700">Carrito de Venta</span>
-            <span className="text-xs text-slate-400">{cart.length} producto{cart.length !== 1 ? 's' : ''}</span>
+            <span className="text-xs text-slate-400">{carrito.length} producto{carrito.length !== 1 ? 's' : ''}</span>
           </div>
 
-          {cart.length === 0 ? (
+          {carrito.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-300 gap-2">
               <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m5-9v9m4-9v9m5-9l2 9" />
@@ -508,29 +519,29 @@ function POSScreen() {
                   </tr>
                 </thead>
                 <tbody>
-                  {cart.map(item => (
-                    <tr key={item.product.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                  {carrito.map(item => (
+                    <tr key={item.producto.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                       <td className="px-4 py-3">
-                        <div className="font-500 text-slate-800 text-xs">{item.product.name}</div>
-                        <div className="text-xs text-slate-400">{item.product.category}</div>
+                        <div className="font-500 text-slate-800 text-xs">{item.producto.nombreComercial}</div>
+                        <div className="text-xs text-slate-400">{item.producto.categoriaNombre}</div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => updateQty(item.product.id, item.qty - 1)}
+                          <button onClick={() => actualizarCantidad(item.producto.id, item.cantidad - 1)}
                             className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs flex items-center justify-center">−</button>
-                          <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="w-6 text-center text-sm font-500">{item.qty}</span>
-                          <button onClick={() => updateQty(item.product.id, item.qty + 1)}
+                          <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="w-6 text-center text-sm font-500">{item.cantidad}</span>
+                          <button onClick={() => actualizarCantidad(item.producto.id, item.cantidad + 1)}
                             className="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs flex items-center justify-center">+</button>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-xs text-slate-600">S/ {item.product.price.toFixed(2)}</span>
+                        <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-xs text-slate-600">{formatearMoneda(item.producto.precioVenta)}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-slate-800">S/ {(item.product.price * item.qty).toFixed(2)}</span>
+                        <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-slate-800">{formatearMoneda(item.producto.precioVenta * item.cantidad)}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <button onClick={() => updateQty(item.product.id, 0)} className="text-slate-300 hover:text-red-400 transition-colors">✕</button>
+                        <button onClick={() => actualizarCantidad(item.producto.id, 0)} className="text-slate-300 hover:text-red-400 transition-colors">✕</button>
                       </td>
                     </tr>
                   ))}
@@ -543,16 +554,16 @@ function POSScreen() {
           <div className="border-t border-slate-200 p-4">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm text-slate-500 font-medium">Total a Pagar</span>
-              <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-2xl font-700 text-slate-900">S/ {total.toFixed(2)}</span>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-2xl font-700 text-slate-900">{formatearMoneda(total)}</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => setCart([])}
+              <button onClick={() => setCarrito([])}
                 className="py-2.5 rounded-xl border-2 border-red-200 text-red-600 text-sm font-600 hover:bg-red-50 transition-colors">
                 Anular Venta
               </button>
-              <button disabled={cart.length === 0}
+              <button disabled={carrito.length === 0 || procesandoVenta} onClick={registrarVenta}
                 className="py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm shadow-emerald-200">
-                Cobrar S/ {total.toFixed(2)}
+                {procesandoVenta ? 'Procesando…' : `Cobrar ${formatearMoneda(total)}`}
               </button>
             </div>
           </div>
@@ -580,36 +591,35 @@ function POSScreen() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((msg, i) => (
-            <div key={i} className={`msg-enter flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} flex-col gap-2`}>
-              {msg.role === 'bot' && (
+          {mensajes.map((msg, i) => (
+            <div key={i} className={`msg-enter flex ${msg.rol === 'usuario' ? 'justify-end' : 'justify-start'} flex-col gap-2`}>
+              {msg.rol === 'asistente' && (
                 <div className="flex items-end gap-2">
                   <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 text-xs">🤖</div>
                   <div className="bg-slate-100 text-slate-800 text-xs leading-relaxed px-3.5 py-2.5 rounded-2xl rounded-bl-sm max-w-[260px]">
-                    {msg.text}
+                    {msg.texto}
                   </div>
                 </div>
               )}
-              {msg.role === 'user' && (
+              {msg.rol === 'usuario' && (
                 <div className="flex justify-end">
                   <div className="bg-emerald-600 text-white text-xs leading-relaxed px-3.5 py-2.5 rounded-2xl rounded-br-sm max-w-[220px]">
-                    {msg.text}
+                    {msg.texto}
                   </div>
                 </div>
               )}
-              {/* Suggestion Cards */}
-              {msg.suggestions && msg.suggestions.map(p => (
+              {msg.sugerencias && msg.sugerencias.map(p => (
                 <div key={p.id} className="ml-8 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
-                      <div className="text-xs font-600 text-slate-800 leading-tight">{p.name}</div>
-                      <div className="text-xs text-slate-400 mt-0.5">{p.lab}</div>
+                      <div className="text-xs font-600 text-slate-800 leading-tight">{p.nombreComercial}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">{p.laboratorioNombre}</div>
                     </div>
-                    <Badge label={`${p.stock} u.`} variant={p.stock < 10 ? 'yellow' : 'green'} />
+                    <Badge label="Disponible" variant="green" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-700 text-emerald-700">S/ {p.price.toFixed(2)}</span>
-                    <button onClick={() => addToCart(p)}
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-700 text-emerald-700">{formatearMoneda(p.precioVenta)}</span>
+                    <button onClick={() => agregarAlCarrito(p)}
                       className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-xs font-600 rounded-lg hover:bg-emerald-700 transition-colors">
                       + Agregar
                     </button>
@@ -639,11 +649,11 @@ function POSScreen() {
             <input
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && sendChat()}
+              onKeyDown={e => e.key === 'Enter' && enviarChat()}
               placeholder="Ej: fiebre y tos, ¿qué hay en stock?"
               className="flex-1 text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 outline-none bg-slate-50 focus:bg-white transition-all"
             />
-            <button onClick={sendChat} disabled={!chatInput.trim() || chatLoading}
+            <button onClick={enviarChat} disabled={!chatInput.trim() || chatLoading}
               className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center hover:bg-emerald-700 disabled:opacity-40 transition-colors flex-shrink-0">
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
@@ -659,42 +669,41 @@ function POSScreen() {
 
 // ─── Screen: Inventory ────────────────────────────────────────────────────────
 
-function InventoryScreen() {
+function CatalogoScreen({ productos, categorias, laboratorios, cargando, esGerente }: {
+  productos: ProductoResumen[]; categorias: Categoria[]; laboratorios: Laboratorio[]
+  cargando: boolean; esGerente: boolean
+}) {
   const [tab, setTab] = useState<'productos' | 'categorias' | 'laboratorios'>('productos')
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const [showModal, setShowModal] = useState(false)
-  const [editProduct, setEditProduct] = useState<Partial<Product>>({})
-  const PER_PAGE = 8
+  const [busqueda, setBusqueda] = useState('')
+  const [pagina, setPagina] = useState(1)
+  const [mostrarModal, setMostrarModal] = useState(false)
+  const [productoEditando, setProductoEditando] = useState<Partial<ProductoResumen>>({})
+  const POR_PAGINA = 8
 
-  const filtered = PRODUCTS.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category.toLowerCase().includes(search.toLowerCase()) ||
-    p.lab.toLowerCase().includes(search.toLowerCase())
+  const filtrados = productos.filter(p =>
+    p.nombreComercial.toLowerCase().includes(busqueda.toLowerCase()) ||
+    p.categoriaNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+    p.laboratorioNombre.toLowerCase().includes(busqueda.toLowerCase())
   )
-  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-  const totalPages = Math.ceil(filtered.length / PER_PAGE)
-
-  const cats = [...new Set(PRODUCTS.map(p => p.category))].sort()
-  const labs = [...new Set(PRODUCTS.map(p => p.lab))].sort()
-
-  const isExpiringSoon = (d: string) => {
-    const diff = (new Date(d).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    return diff < 60
-  }
+  const paginados = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA))
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 style={{ fontFamily: 'DM Sans, sans-serif' }} className="text-2xl font-700 text-slate-900">Catálogo e Inventario</h1>
-          <p className="text-sm text-slate-400 mt-0.5">{PRODUCTS.length} productos registrados</p>
+          <p className="text-sm text-slate-400 mt-0.5">{productos.length} productos registrados</p>
         </div>
-        <button onClick={() => { setEditProduct({}); setShowModal(true) }}
+        {esGerente && (
+        <button onClick={() => { setProductoEditando({}); setMostrarModal(true) }}
           className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-sm font-600 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200">
           <span className="text-lg leading-none">+</span> Nuevo Producto
         </button>
+        )}
       </div>
+
+      {cargando && <p className="text-sm text-slate-400 mb-4">Cargando catálogo…</p>}
 
       {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-slate-100 p-1 rounded-xl w-fit">
@@ -703,7 +712,7 @@ function InventoryScreen() {
             className={`px-4 py-2 rounded-lg text-sm font-500 capitalize transition-all ${
               tab === t ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}>
-            {t === 'productos' ? `Productos (${PRODUCTS.length})` : t === 'categorias' ? `Categorías (${cats.length})` : `Laboratorios (${labs.length})`}
+            {t === 'productos' ? `Productos (${productos.length})` : t === 'categorias' ? `Categorías (${categorias.length})` : `Laboratorios (${laboratorios.length})`}
           </button>
         ))}
       </div>
@@ -716,57 +725,49 @@ function InventoryScreen() {
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
               </svg>
-              <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
+              <input value={busqueda} onChange={e => { setBusqueda(e.target.value); setPagina(1) }}
                 placeholder="Buscar productos…"
                 className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 outline-none" />
             </div>
             <select className="px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-600 outline-none focus:border-emerald-500">
               <option>Todas las categorías</option>
-              {cats.map(c => <option key={c}>{c}</option>)}
+              {categorias.map(c => <option key={c.id}>{c.nombre}</option>)}
             </select>
             <select className="px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-600 outline-none focus:border-emerald-500">
               <option>Todos los estados</option>
               <option>Activo</option>
               <option>Inactivo</option>
             </select>
-            <span className="ml-auto text-xs text-slate-400">{filtered.length} resultados</span>
+            <span className="ml-auto text-xs text-slate-400">{filtrados.length} resultados</span>
           </div>
 
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/80">
-                {['Nombre / Laboratorio', 'Categoría', 'Precio', 'Stock', 'Vencimiento', 'Estado', ''].map(h => (
+                {['Nombre / Laboratorio', 'Categoría', 'Precio', 'Estado', ''].map(h => (
                   <th key={h} className="text-left px-5 py-3 text-xs font-600 text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {paginated.map(p => (
+              {paginados.map(p => (
                 <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
                   <td className="px-5 py-3.5">
-                    <div className="font-500 text-slate-800 text-sm">{p.name}</div>
-                    <div className="text-xs text-slate-400">{p.lab}</div>
+                    <div className="font-500 text-slate-800 text-sm">{p.nombreComercial}</div>
+                    <div className="text-xs text-slate-400">{p.laboratorioNombre}</div>
                   </td>
-                  <td className="px-5 py-3.5 text-xs text-slate-500">{p.category}</td>
+                  <td className="px-5 py-3.5 text-xs text-slate-500">{p.categoriaNombre}</td>
                   <td className="px-5 py-3.5">
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-slate-800">S/ {p.price.toFixed(2)}</span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className={`text-sm font-600 ${p.stock === 0 ? 'text-red-600' : p.stock < 10 ? 'text-amber-600' : 'text-slate-700'}`}>
-                      {p.stock}
-                    </span>
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-slate-800">{formatearMoneda(p.precioVenta)}</span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className={`text-xs font-500 ${isExpiringSoon(p.expiry) ? 'text-amber-600' : 'text-slate-500'}`}>
-                      {new Date(p.expiry).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </span>
+                    <Badge label={p.estado ? 'Activo' : 'Inactivo'} variant={p.estado ? 'green' : 'gray'} />
                   </td>
                   <td className="px-5 py-3.5">
-                    <Badge label={p.active ? 'Activo' : 'Inactivo'} variant={p.active ? 'green' : 'gray'} />
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <button onClick={() => { setEditProduct(p); setShowModal(true) }}
+                    {esGerente && (
+                    <button onClick={() => { setProductoEditando(p); setMostrarModal(true) }}
                       className="text-xs text-slate-400 hover:text-emerald-600 font-500 transition-colors">Editar</button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -776,20 +777,20 @@ function InventoryScreen() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100">
             <span className="text-xs text-slate-400">
-              Página {page} de {totalPages} · {filtered.length} productos (20 por página en producción)
+              Página {pagina} de {totalPaginas} · {filtrados.length} productos
             </span>
             <div className="flex gap-1">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}
                 className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
                 ← Anterior
               </button>
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(n => (
-                <button key={n} onClick={() => setPage(n)}
-                  className={`w-8 h-8 text-xs rounded-lg ${page === n ? 'bg-emerald-600 text-white' : 'border border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+              {Array.from({ length: Math.min(totalPaginas, 5) }, (_, i) => i + 1).map(n => (
+                <button key={n} onClick={() => setPagina(n)}
+                  className={`w-8 h-8 text-xs rounded-lg ${pagina === n ? 'bg-emerald-600 text-white' : 'border border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
                   {n}
                 </button>
               ))}
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}
                 className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
                 Siguiente →
               </button>
@@ -803,22 +804,20 @@ function InventoryScreen() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/80">
-                {['Categoría', 'N° Productos', 'Stock Total', ''].map(h => (
+                {['Categoría', 'N° Productos', 'Estado', ''].map(h => (
                   <th key={h} className="text-left px-5 py-3 text-xs font-600 text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {cats.map(c => {
-                const prods = PRODUCTS.filter(p => p.category === c)
+              {categorias.map(c => {
+                const prods = productos.filter(p => p.categoriaId === c.id)
                 return (
-                  <tr key={c} className="border-b border-slate-50 hover:bg-slate-50/60">
-                    <td className="px-5 py-3.5 font-500 text-slate-800">{c}</td>
+                  <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50/60">
+                    <td className="px-5 py-3.5 font-500 text-slate-800">{c.nombre}</td>
                     <td className="px-5 py-3.5 text-slate-500">{prods.length}</td>
                     <td className="px-5 py-3.5">
-                      <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-slate-700">
-                        {prods.reduce((s, p) => s + p.stock, 0)} unid.
-                      </span>
+                      <Badge label={c.estado ? 'Activa' : 'Inactiva'} variant={c.estado ? 'green' : 'gray'} />
                     </td>
                     <td className="px-5 py-3.5">
                       <button className="text-xs text-slate-400 hover:text-emerald-600">Ver productos →</button>
@@ -842,16 +841,16 @@ function InventoryScreen() {
               </tr>
             </thead>
             <tbody>
-              {labs.map(l => {
-                const prods = PRODUCTS.filter(p => p.lab === l)
-                const valor = prods.reduce((s, p) => s + p.stock * p.price, 0)
+              {laboratorios.map(l => {
+                const prods = productos.filter(p => p.laboratorioId === l.id)
+                const valor = prods.reduce((s, p) => s + p.precioVenta, 0)
                 return (
-                  <tr key={l} className="border-b border-slate-50 hover:bg-slate-50/60">
-                    <td className="px-5 py-3.5 font-500 text-slate-800">{l}</td>
+                  <tr key={l.id} className="border-b border-slate-50 hover:bg-slate-50/60">
+                    <td className="px-5 py-3.5 font-500 text-slate-800">{l.nombre}</td>
                     <td className="px-5 py-3.5 text-slate-500">{prods.length}</td>
                     <td className="px-5 py-3.5">
                       <span style={{ fontFamily: 'JetBrains Mono, monospace' }} className="text-sm font-600 text-emerald-700">
-                        S/ {valor.toFixed(2)}
+                        {formatearMoneda(valor)}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
@@ -866,75 +865,25 @@ function InventoryScreen() {
       )}
 
       {/* New/Edit Product Modal */}
-      {showModal && (
+      {mostrarModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
               <div>
                 <h2 style={{ fontFamily: 'DM Sans, sans-serif' }} className="text-lg font-700 text-slate-900">
-                  {editProduct.id ? 'Editar Producto' : 'Nuevo Producto'}
+                  {productoEditando.id ? 'Editar Producto' : 'Nuevo Producto'}
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Complete todos los campos requeridos</p>
+                <p className="text-xs text-slate-400 mt-0.5">La creación/edición vía API estará disponible en la siguiente iteración</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">✕</button>
+              <button onClick={() => setMostrarModal(false)} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">✕</button>
             </div>
-            <div className="p-6 grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Nombre del Medicamento *</label>
-                <input defaultValue={editProduct.name || ''} placeholder="Ej: Paracetamol 500mg"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Categoría *</label>
-                <select defaultValue={editProduct.category || ''} className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-700 focus:border-emerald-500 outline-none appearance-none bg-white">
-                  <option value="">Seleccionar…</option>
-                  {cats.map(c => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Laboratorio *</label>
-                <select defaultValue={editProduct.lab || ''} className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-700 focus:border-emerald-500 outline-none appearance-none bg-white">
-                  <option value="">Seleccionar…</option>
-                  {labs.map(l => <option key={l}>{l}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Precio (S/) *</label>
-                <input type="number" step="0.01" min="0" defaultValue={editProduct.price || ''} placeholder="0.00"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Stock Inicial</label>
-                <input type="number" min="0" defaultValue={editProduct.stock || 0}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Fecha de Vencimiento</label>
-                <input type="date" defaultValue={editProduct.expiry || ''}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Estado</label>
-                <select defaultValue={editProduct.active !== false ? 'activo' : 'inactivo'}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-700 focus:border-emerald-500 outline-none bg-white">
-                  <option value="activo">Activo</option>
-                  <option value="inactivo">Inactivo</option>
-                </select>
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-600 text-slate-500 mb-1.5 uppercase tracking-wide">Indicaciones Médicas</label>
-                <textarea rows={3} defaultValue="" placeholder="Indicaciones, contraindicaciones, dosis recomendada…"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-50 outline-none resize-none" />
-              </div>
+            <div className="p-6">
+              <p className="text-sm text-slate-600">Use Swagger o el rol Gerente en la API REST para administrar productos: <code className="text-xs bg-slate-100 px-1 rounded">POST /api/v1/productos</code></p>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50">
-              <button onClick={() => setShowModal(false)}
+              <button onClick={() => setMostrarModal(false)}
                 className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-500 text-slate-600 hover:bg-white transition-colors">
-                Cancelar
-              </button>
-              <button onClick={() => setShowModal(false)}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-600 hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-100">
-                {editProduct.id ? 'Guardar Cambios' : 'Crear Producto'}
+                Cerrar
               </button>
             </div>
           </div>
@@ -987,7 +936,7 @@ function LogoutIcon() {
   )
 }
 
-function KeycloakIcon() {
+function LockIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -998,25 +947,82 @@ function KeycloakIcon() {
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('login')
-  const [user, setUser] = useState<User | null>(null)
+  const { autenticado, usuario, cerrarSesion, esGerente } = useAuth()
+  const [pantalla, setPantalla] = useState<PantallaApp>('login')
+  const [productos, setProductos] = useState<ProductoResumen[]>([])
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
+  const [ventas, setVentas] = useState<Venta[]>([])
+  const [cargandoDatos, setCargandoDatos] = useState(false)
 
-  const handleLogin = (role: Role) => {
-    setUser({ name: role === 'manager' ? 'Ana García' : 'Carlos Ríos', role })
-    setScreen(role === 'manager' ? 'dashboard' : 'pos')
+  const cargarDatos = useCallback(async () => {
+    setCargandoDatos(true)
+    try {
+      const [productosPagina, categoriasPagina, laboratoriosPagina, ventasPagina] = await Promise.all([
+        productoService.listar({ size: 100, page: 0 }),
+        categoriaService.listar({ size: 100, page: 0 }),
+        laboratorioService.listar({ size: 100, page: 0 }),
+        ventaService.listar({ size: 20, page: 0, sort: 'fechaVenta,desc' }),
+      ])
+      setProductos(productosPagina.content)
+      setCategorias(categoriasPagina.content)
+      setLaboratorios(laboratoriosPagina.content)
+      setVentas(ventasPagina.content)
+    } catch {
+      console.error('Error al cargar datos del backend')
+    } finally {
+      setCargandoDatos(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (autenticado) {
+      cargarDatos()
+    }
+  }, [autenticado, cargarDatos])
+
+  const handleLogin = (roles: string) => {
+    setPantalla(esGerente(roles) ? 'panel' : 'punto-venta')
   }
 
-  const handleLogout = () => { setUser(null); setScreen('login') }
+  const handleLogout = () => {
+    cerrarSesion()
+    setPantalla('login')
+    setProductos([])
+    setCategorias([])
+    setLaboratorios([])
+    setVentas([])
+  }
 
-  if (screen === 'login') return <LoginScreen onLogin={handleLogin} />
+  if (!autenticado || pantalla === 'login') {
+    return <LoginScreen onLogin={handleLogin} />
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-100">
-      <Sidebar screen={screen} role={user!.role} onNav={setScreen} onLogout={handleLogout} />
+      <Sidebar
+        pantalla={pantalla}
+        roles={usuario!.roles}
+        nombreUsuario={usuario!.username}
+        onNav={setPantalla}
+        onLogout={handleLogout}
+      />
       <main className="flex-1 flex flex-col overflow-hidden">
-        {screen === 'dashboard' && <DashboardScreen />}
-        {screen === 'pos' && <POSScreen />}
-        {screen === 'inventory' && <InventoryScreen />}
+        {pantalla === 'panel' && esGerente && (
+          <DashboardScreen ventas={ventas} productos={productos} cargando={cargandoDatos} />
+        )}
+        {pantalla === 'punto-venta' && (
+          <POSScreen productos={productos} usuarioId={usuario!.id} onVentaRegistrada={cargarDatos} />
+        )}
+        {pantalla === 'catalogo' && (
+          <CatalogoScreen
+            productos={productos}
+            categorias={categorias}
+            laboratorios={laboratorios}
+            cargando={cargandoDatos}
+            esGerente={esGerente}
+          />
+        )}
       </main>
     </div>
   )

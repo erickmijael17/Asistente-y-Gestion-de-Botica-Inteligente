@@ -1,19 +1,20 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import type { RolUsuario } from '../types/domain.types';
 
 interface PrivateRouteProps {
-  requiredRole?: string;
+  roles?: RolUsuario[];
 }
 
-export const PrivateRoute = ({ requiredRole }: PrivateRouteProps) => {
-  const { isAuthenticated, hasRole } = useAuth();
+export const PrivateRoute = ({ roles }: PrivateRouteProps) => {
+  const { autenticado, tieneRol } = useAuth();
 
-  if (!isAuthenticated) {
+  if (!autenticado) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && !hasRole(requiredRole)) {
-    return <Navigate to="/" replace />; // O a una página de 'No Autorizado'
+  if (roles && !roles.some((rol) => tieneRol(rol))) {
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

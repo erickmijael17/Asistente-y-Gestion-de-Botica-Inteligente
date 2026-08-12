@@ -1,70 +1,83 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
-
-interface User {
-  username: string;
-  roles: string;
-}
+import type { RolUsuario, UsuarioSesion } from '../types/domain.types';
 
 interface AuthContextType {
-  user: User | null;
+  usuario: UsuarioSesion | null;
   token: string | null;
-  login: (token: string, username: string, roles: string) => void;
-  logout: () => void;
-  isAuthenticated: boolean;
-  hasRole: (role: string) => boolean;
+  iniciarSesion: (token: string, userId: number, username: string, roles: string) => void;
+  cerrarSesion: () => void;
+  autenticado: boolean;
+  tieneRol: (rol: RolUsuario) => boolean;
+  esGerente: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [token, setToken] = useState<string | null>(null);
+
+  const cerrarSesion = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('roles');
+    localStorage.removeItem('userId');
+    setToken(null);
+    setUsuario(null);
+  }, []);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUsername = localStorage.getItem('username');
     const storedRoles = localStorage.getItem('roles');
+    const storedUserId = localStorage.getItem('userId');
 
-    if (storedToken && storedUsername && storedRoles) {
+    if (storedToken && storedUsername && storedRoles && storedUserId) {
       try {
         const decoded = jwtDecode(storedToken);
-        // Check if token is expired
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-          logout();
+          cerrarSesion();
         } else {
           setToken(storedToken);
-          setUser({ username: storedUsername, roles: storedRoles });
+          setUsuario({
+            id: Number(storedUserId),
+            username: storedUsername,
+            roles: storedRoles,
+          });
         }
-      } catch (error) {
-        logout();
+      } catch {
+        cerrarSesion();
       }
     }
-  }, []);
+  }, [cerrarSesion]);
 
-  const login = (newToken: string, username: string, roles: string) => {
+  const iniciarSesion = (newToken: string, userId: number, username: string, roles: string) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('username', username);
     localStorage.setItem('roles', roles);
+    localStorage.setItem('userId', String(userId));
     setToken(newToken);
-    setUser({ username, roles });
+    setUsuario({ id: userId, username, roles });
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('roles');
-    setToken(null);
-    setUser(null);
-  };
-
-  const hasRole = (role: string) => {
-    if (!user) return false;
-    return user.roles.split(',').includes(role);
+  const tieneRol = (rol: RolUsuario) => {
+    if (!usuario) return false;
+    return usuario.roles.split(',').map((r) => r.trim()).includes(rol);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasRole }}>
+    <AuthContext.Provider
+      value={{
+        usuario,
+        token,
+        iniciarSesion,
+        cerrarSesion,
+        autenticado: !!token,
+        tieneRol,
+        esGerente: tieneRol('ROLE_OWNER'),
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -73,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth debe usarse dentro de AuthProvider');
   }
   return context;
 };
