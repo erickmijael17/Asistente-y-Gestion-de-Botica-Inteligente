@@ -1,41 +1,56 @@
-# figma-make-app
+# Frontend — Botica Inteligente
 
-React + Vite + Tailwind CSS project running inside Figma Make.
+Aplicación web React + Vite para el sistema de gestión farmacéutica.
 
-## Development Server
+## Stack
 
-A Vite development server is **already running** on `$PORT` (default 8443). You don't need to start it manually.
+- React 19 + TypeScript
+- Vite 8
+- Tailwind CSS 4
+- Axios (cliente HTTP)
+- Recharts (gráficos del panel)
 
-- Preview URL: The user can access the running app through the preview panel
-- Hot reload: Changes to source files are reflected immediately
+## Estructura
 
-## Project Structure
+```text
+frontend/src/
+├── api/client.ts          # Cliente Axios con JWT
+├── context/AuthContext.tsx # Sesión y roles
+├── services/              # Capa de integración con backend
+├── types/                 # Tipos TypeScript alineados al backend
+├── App.tsx                # Pantallas principales
+└── main.tsx               # Punto de entrada
+```
 
-This is the canonical project structure. Start with task-relevant files below. Only follow imports or inspect other files when required, when a documented path is missing, or when the repository contradicts this guide.
+## Desarrollo local
 
-- `src/main.tsx` - React entrypoint; imports `src/index.css` and mounts `src/App.tsx` into the `#root` element
-- `src/App.tsx` - Primary application component and the usual starting point for UI work
-- `src/index.css` - Global CSS entrypoint and Tailwind CSS v4 import
-- `index.html` - Vite HTML shell containing the `#root` element and loading `src/main.tsx`
-- `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
-- `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and Figma Make plugins plus the `@` alias for `src`
-- `.mise.toml` - Toolchain versions for Node.js and pnpm
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
 
-## Dependencies
+Requisito: backend corriendo en `http://localhost:8080`.
 
-- Runtime: React 19 and React DOM 19
-- Styling: Tailwind CSS v4 with the `@tailwindcss/vite` plugin
-- Build tooling: Vite 8, TypeScript 5.7, and `@vitejs/plugin-react`
-- Formatting: oxfmt
+Documentación de integración: [docs/INTEGRACION_BACKEND.md](docs/INTEGRACION_BACKEND.md)
 
-## Styling
+## Variables de entorno
 
-This project uses **Tailwind CSS v4** through the `@tailwindcss/vite` plugin configured in `vite.config.ts`. `src/index.css` imports Tailwind with `@import 'tailwindcss';`. Use Tailwind utility classes directly in JSX and put global CSS or Tailwind v4 theme customization in `src/index.css`. This scaffold does not need a Tailwind config file or PostCSS config.
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `VITE_API_URL` | URL base de la API (incluye `/api`) | `http://localhost:8080/api` |
 
-`src/main.tsx` imports `src/index.css`, so global font wiring belongs in `src/index.css`. Keep CSS `@import` statements first, then add any `@font-face` rules and font-family defaults there.
+## Pantallas
 
-## Code quality
+| Pantalla | Rol | API utilizada |
+|----------|-----|---------------|
+| Login | Público | `POST /api/auth/login` |
+| Dashboard | Gerente (`ROLE_OWNER`) | Ventas, productos |
+| Punto de Venta | Todos | Productos, ventas |
+| Catálogo | Todos (lectura) | Categorías, laboratorios, productos |
 
-- Use double quotes for strings containing apostrophes (`"We're here to help"`), or escape them in single-quoted strings. An unescaped apostrophe in a single-quoted string breaks the build.
-- Ensure JSX tags are closed and braces are balanced.
-- Export components as default exports.
+## Roles
+
+- `ROLE_OWNER` → Gerente (acceso a panel y CRUD vía API)
+- `ROLE_SELLER` → Vendedor (ventas y consulta de catálogo)

@@ -1,13 +1,13 @@
-import api from '../api/axios';
+import api from '../api/client';
 
 export interface LoginRequest {
   username: string;
-  password?: string; // En el sistema real debería enviarse encriptado o manejado seguro, pero para el backend que creamos enviamos texto plano y bcrypt se encarga en backend
+  password: string;
 }
 
 export interface RegisterRequest {
   username: string;
-  password?: string;
+  password: string;
   nombres: string;
   apellidos: string;
   roles: string;
@@ -18,20 +18,17 @@ export interface AuthResponse {
   type: string;
   username: string;
   roles: string;
+  userId: number;
 }
 
 export const authService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/login', data, {
-      baseURL: import.meta.env.VITE_AUTH_URL
-    });
+    const response = await api.post<AuthResponse>('/auth/login', data);
     return response.data;
   },
 
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/register', data, {
-      baseURL: import.meta.env.VITE_AUTH_URL
-    });
+    const response = await api.post<AuthResponse>('/auth/register', data);
     return response.data;
   },
 };
