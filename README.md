@@ -66,6 +66,8 @@ npm install
 npm run dev
 ```
 
+En desarrollo, Vite hace de proxy: el navegador llama a `/api` y Vite reenvía a `http://localhost:8080/api` (sin errores CORS). Para producción indicar la URL absoluta en `VITE_API_URL`.
+
 UI: `http://localhost:5173`
 
 ## Variables de entorno principales
@@ -84,7 +86,8 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173
 ### Frontend
 
 ```text
-VITE_API_URL=http://localhost:8080/api
+VITE_API_URL=/api        # dev (proxy Vite)
+VITE_API_URL=https://api.tu-dominio.com/api   # producción
 ```
 
 ## Endpoints principales

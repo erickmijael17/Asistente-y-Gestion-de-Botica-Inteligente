@@ -2,6 +2,7 @@ package com.botica.inteligente.venta.service.impl;
 
 import com.botica.inteligente.producto.entity.Producto;
 import com.botica.inteligente.producto.repository.ProductoRepository;
+import com.botica.inteligente.security.CurrentUserService;
 import com.botica.inteligente.shared.exception.ConflictException;
 import com.botica.inteligente.shared.exception.ResourceNotFoundException;
 import com.botica.inteligente.usuario.entity.Usuario;
@@ -32,9 +33,9 @@ public class VentaServiceImpl implements VentaService {
 
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
-    // Asumiendo que existe un repositorio para Usuario
     private final UsuarioRepository usuarioRepository;
     private final VentaMapper ventaMapper;
+    private final CurrentUserService currentUserService;
 
     @Override
     public Page<VentaResponse> findAll(VentaFilter filter, Pageable pageable) {
@@ -50,8 +51,8 @@ public class VentaServiceImpl implements VentaService {
     @Override
     @Transactional
     public VentaResponse create(VentaCreateRequest request) {
-        Usuario usuario = usuarioRepository.findById(request.usuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        Usuario usuario = usuarioRepository.findByUsername(requireCurrentUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario autenticado no encontrado"));
 
         Venta venta = new Venta();
         venta.setUsuario(usuario);
@@ -63,33 +64,26 @@ public class VentaServiceImpl implements VentaService {
         for (VentaDetalleRequest detRequest : request.detalles()) {
             Producto producto = productoRepository.findById(detRequest.productoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detRequest.productoId()));
-            
+
             if (!producto.getEstado()) {
                 throw new ConflictException("El producto " + producto.getNombreComercial() + " se encuentra inactivo");
             }
-            
-            // Logica básica de reducción de stock
-            if (producto.getStockMinimo() != null && detRequest.cantidad() > 0) {
-                 // Aquí deberíamos descontar el stock, pero como no hay tabla estricta de inventario aún,
-                 // asumiremos que la validación será más compleja en el futuro.
-                 // producto.setStockMinimo(producto.getStockMinimo() - detRequest.cantidad());
-            }
 
+            BigDecimal precioUnitario = producto.getPrecioVenta();
             VentaDetalle detalle = new VentaDetalle();
             detalle.setProducto(producto);
             detalle.setCantidad(detRequest.cantidad());
-            detalle.setPrecioUnitario(detRequest.precioUnitario());
-            
-            BigDecimal subtotalDetalle = detRequest.precioUnitario().multiply(new BigDecimal(detRequest.cantidad()));
+            detalle.setPrecioUnitario(precioUnitario);
+
+            BigDecimal subtotalDetalle = precioUnitario.multiply(new BigDecimal(detRequest.cantidad()));
             detalle.setSubtotal(subtotalDetalle);
-            
+
             venta.addDetalle(detalle);
-            
+
             subtotalTotal = subtotalTotal.add(subtotalDetalle);
         }
 
         venta.setSubtotal(subtotalTotal);
-        // Supongamos que no hay impuestos configurados dinámicamente por ahora (o ya están incluidos en el precio)
         venta.setImpuestos(BigDecimal.ZERO);
         venta.setTotal(subtotalTotal);
 
@@ -104,8 +98,12 @@ public class VentaServiceImpl implements VentaService {
             throw new ConflictException("La venta ya se encuentra anulada");
         }
         venta.setEstado(EstadoVenta.ANULADA);
-        // Aquí se debería devolver el stock a inventario en el futuro
         return ventaMapper.toResponse(ventaRepository.save(venta));
+    }
+
+    private String requireCurrentUsername() {
+        return currentUserService.username()
+                .orElseThrow(() -> new ConflictException("No se pudo identificar al usuario autenticado"));
     }
 
     private Venta findEntityById(Long id) {

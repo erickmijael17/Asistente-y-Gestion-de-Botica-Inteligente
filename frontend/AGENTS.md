@@ -14,13 +14,27 @@ Aplicación web React + Vite para el sistema de gestión farmacéutica.
 
 ```text
 frontend/src/
-├── api/client.ts          # Cliente Axios con JWT
-├── context/AuthContext.tsx # Sesión y roles
-├── services/              # Capa de integración con backend
-├── types/                 # Tipos TypeScript alineados al backend
-├── App.tsx                # Pantallas principales
-└── main.tsx               # Punto de entrada
+├── api/client.ts              # Cliente Axios con JWT (401 → evento sesion expirada)
+├── components/
+│   ├── layout/                # Sidebar, DashboardLayout
+│   ├── ui/                    # Badge
+│   └── icons.tsx              # Iconos SVG
+├── context/AuthContext.tsx    # Sesión, roles y logout (escucha 401)
+├── features/
+│   ├── auth/                  # LoginScreen
+│   ├── dashboard/             # DashboardScreen (gráficos Recharts)
+│   ├── pos/                   # POSScreen (chatbot IA)
+│   └── catalogo/              # CatalogoScreen
+├── hooks/                     # useCatalogo (datos compartidos)
+├── router/AppRouter.tsx       # Rutas, lazy loading, ProtectedRoute/GerenteRoute
+├── services/                  # Capa de integración con backend
+├── types/                     # Tipos TypeScript alineados al backend
+├── utils/                     # format, roles
+├── App.tsx                    # Renderiza AppRouter
+└── main.tsx                   # Punto de entrada (BrowserRouter + AuthProvider)
 ```
+
+Rutas (`AppRouter.tsx`): `/login`, `/dashboard` (GerenteRoute), `/pos`, `/catalogo`. Las pantallas se cargan con `React.lazy`; el gráfico del dashboard (Recharts) se descarga solo cuando se visita esa ruta.
 
 ## Desarrollo local
 
@@ -39,7 +53,7 @@ Documentación de integración: [docs/INTEGRACION_BACKEND.md](docs/INTEGRACION_B
 
 | Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
-| `VITE_API_URL` | URL base de la API (incluye `/api`) | `http://localhost:8080/api` |
+| `VITE_API_URL` | URL base de la API. En dev usar `/api` (proxy Vite); en prod la URL absoluta | `/api` o `https://api.dominio.com/api` |
 
 ## Pantallas
 

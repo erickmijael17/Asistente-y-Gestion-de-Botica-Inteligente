@@ -204,6 +204,11 @@ V2__create_catalog_tables.sql
 V3__create_product_table.sql
 V4__insert_initial_catalog_data.sql
 V5__create_ventas_tables.sql
+V6__refactor_usuario_table.sql
+V7__insert_initial_usuario.sql
+V8__update_usuario_password.sql
+V9__set_gerente_password.sql
+V10__add_version_to_ventas.sql
 ```
 
 Para nuevas migraciones, crear una version incremental `V6__...sql`, `V7__...sql`, etc. No modificar migraciones ya aplicadas salvo que el usuario lo pida explicitamente y el entorno sea de desarrollo descartable.
@@ -289,6 +294,8 @@ Mantener pruebas para:
 No usar H2 para simular PostgreSQL.
 
 Si Testcontainers falla por Docker no disponible, reportar la causa exacta y no reemplazarlo por H2.
+
+Nota Testcontainers: con Docker Desktop moderno (Engine >= 29) hay que fijar `api.version=1.44` en `backend/src/test/resources/docker-java.properties`; de lo contrario la conexión falla con HTTP 400. Los tests de migraciones usan el esquema `botica` (`hibernate.default_schema` en `application-test.yml`).
 
 ## Git y archivos locales
 

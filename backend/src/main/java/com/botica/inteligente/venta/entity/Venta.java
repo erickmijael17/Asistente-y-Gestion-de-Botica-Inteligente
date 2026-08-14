@@ -16,6 +16,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -48,6 +49,9 @@ public class Venta extends AuditableEntity {
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
+
+    @Version
+    private Long version;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

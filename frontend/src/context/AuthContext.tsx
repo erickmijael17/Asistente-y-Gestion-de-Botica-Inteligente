@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import { EVENTO_SESION_EXPIRADA } from '../api/client';
+import { esGerente, tieneRol } from '../utils/roles';
 import type { RolUsuario, UsuarioSesion } from '../types/domain.types';
 
 interface AuthContextType {
@@ -14,15 +16,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const CLAVES_SESION = ['token', 'username', 'roles', 'userId'] as const;
+
+function limpiarSesionStorage() {
+  CLAVES_SESION.forEach((clave) => localStorage.removeItem(clave));
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   const cerrarSesion = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('roles');
-    localStorage.removeItem('userId');
+    limpiarSesionStorage();
     setToken(null);
     setUsuario(null);
   }, []);
@@ -52,6 +57,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [cerrarSesion]);
 
+  useEffect(() => {
+    const handleSesionExpirada = () => {
+      cerrarSesion();
+    };
+    window.addEventListener(EVENTO_SESION_EXPIRADA, handleSesionExpirada);
+    return () => window.removeEventListener(EVENTO_SESION_EXPIRADA, handleSesionExpirada);
+  }, [cerrarSesion]);
+
   const iniciarSesion = (newToken: string, userId: number, username: string, roles: string) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('username', username);
@@ -61,9 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsuario({ id: userId, username, roles });
   };
 
-  const tieneRol = (rol: RolUsuario) => {
+  const verificarRol = (rol: RolUsuario) => {
     if (!usuario) return false;
-    return usuario.roles.split(',').map((r) => r.trim()).includes(rol);
+    return tieneRol(usuario.roles, rol);
   };
 
   return (
@@ -74,8 +87,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         iniciarSesion,
         cerrarSesion,
         autenticado: !!token,
-        tieneRol,
-        esGerente: tieneRol('ROLE_OWNER'),
+        tieneRol: verificarRol,
+        esGerente: usuario ? esGerente(usuario.roles) : false,
       }}
     >
       {children}
