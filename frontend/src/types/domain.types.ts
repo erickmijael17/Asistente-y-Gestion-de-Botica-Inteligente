@@ -1,7 +1,5 @@
 export type RolUsuario = 'ROLE_OWNER' | 'ROLE_SELLER';
 
-export type PantallaApp = 'login' | 'panel' | 'punto-venta' | 'catalogo';
-
 export interface UsuarioSesion {
   id: number;
   username: string;

@@ -16,14 +16,4 @@ export const productoService = {
     });
     return response.data.data;
   },
-
-  buscarActivos: async (termino: string, size = 50): Promise<ProductoResumen[]> => {
-    const pagina = await productoService.listar({
-      nombreComercial: termino,
-      estado: true,
-      size,
-      page: 0,
-    });
-    return pagina.content;
-  },
 };

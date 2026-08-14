@@ -18,7 +18,9 @@ El backend ya es un **monolito modular** con endpoints REST bien definidos. El f
 ┌─────────────────────────────────────────────────────────┐
 │  Frontend (React + Vite)                                │
 │                                                         │
-│  App.tsx / pantallas                                    │
+│  router/AppRouter.tsx (rutas + lazy)                    │
+│       ↓                                                 │
+│  features/ (Login, Dashboard, POS, Catálogo)            │
 │       ↓                                                 │
 │  services/  (auth, producto, categoria, venta, …)       │
 │       ↓                                                 │
@@ -40,10 +42,12 @@ El backend ya es un **monolito modular** con endpoints REST bien definidos. El f
 
 ### Principios
 
-1. **Un solo `VITE_API_URL`**: `http://localhost:8080/api` — todas las rutas son relativas a esta base.
-2. **JWT en interceptor**: el token se adjunta automáticamente; en 401 se limpia la sesión.
+1. **Un solo `VITE_API_URL`**: en desarrollo `http://localhost:8080/api` vía **proxy de Vite** (`/api` → `http://localhost:8080`), en producción la URL absoluta de la API. Todas las rutas son relativas a esta base.
+2. **JWT en interceptor**: el token se adjunta automáticamente; en 401 se limpia la sesión. `api/client.ts` dispara el evento `botica:sesion-expirada` que `AuthContext` escucha para cerrar sesión y redirigir a `/login`.
 3. **Servicios por módulo de negocio**: cada servicio conoce su recurso REST y el formato `ApiResponse<T>`.
 4. **Roles alineados con backend**: `ROLE_OWNER` (Gerente), `ROLE_SELLER` (Vendedor).
+
+El proxy de Vite es solo para desarrollo (elimina errores CORS). En producción el frontend sirve la carpeta `dist/` y el navegador apunta directamente a la URL absoluta de la API.
 
 ## Endpoints consumidos
 
@@ -60,10 +64,10 @@ El backend ya es un **monolito modular** con endpoints REST bien definidos. El f
 
 ```bash
 # frontend/.env.local
-VITE_API_URL=http://localhost:8080/api
+VITE_API_URL=/api
 ```
 
-CORS en backend (`application-dev.yml`) permite `http://localhost:5173`.
+En desarrollo, `vite.config.ts` define un proxy: `/api` → `http://localhost:8080`. CORS en backend (`application-dev.yml`) permite `http://localhost:5173` como respaldo.
 
 ## Formato de respuesta
 

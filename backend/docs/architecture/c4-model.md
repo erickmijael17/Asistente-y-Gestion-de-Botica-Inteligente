@@ -14,16 +14,14 @@ Person(gerente, "Gerente (Dueño)", "Visualiza reportes, gestiona stock y alerta
 Person(vendedor, "Vendedor (Farmacéutico)", "Realiza ventas y consulta chatbot")
 
 System(botica_system, "Sistema de Gestión de Botica Inteligente", "Plataforma central que maneja inventario y ventas")
-System_Ext(keycloak, "Keycloak Auth Server", "Servidor de identidades (SSO)")
 
 Rel(gerente, botica_system, "Gestiona el negocio usando", "HTTPS")
 Rel(vendedor, botica_system, "Registra ventas y consultas", "HTTPS")
-Rel(botica_system, keycloak, "Delega validación de tokens a", "HTTPS")
-Rel(gerente, keycloak, "Se autentica usando", "OAuth2/OIDC")
-Rel(vendedor, keycloak, "Se autentica usando", "OAuth2/OIDC")
 
 @enduml
 ```
+
+> La autenticación es **JWT nativo** (Spring Security): el backend firma, emite y valida los tokens. No hay servidor de identidades externo (Keycloak/OAuth2).
 
 ## 2. Diagrama de Contenedores (Nivel 2)
 
@@ -39,21 +37,17 @@ Person(gerente, "Gerente (Dueño)", "Supervisa reportes e inventario.")
 Person(vendedor, "Vendedor (Farmacéutico)", "Realiza ventas y consultas.")
 
 System_Boundary(c1, "Sistema Botica Inteligente") {
-    Container(spa, "Aplicación Web (Frontend)", "Angular", "Provee la interfaz de usuario interactiva.")
-    Container(backend, "Monolito API (Backend)", "Spring Boot", "Lógica de negocio, reglas de ventas.")
+    Container(spa, "Aplicación Web (Frontend)", "React + Vite", "Provee la interfaz de usuario interactiva.")
+    Container(backend, "Monolito API (Backend)", "Spring Boot", "Lógica de negocio, reglas de ventas, autenticación JWT nativa.")
     ContainerDb(db, "Base de Datos", "PostgreSQL", "Almacena catálogo, inventario, ventas y roles.")
     Container(chatbot, "Módulo de Chatbot IA", "LLM", "Accede a la BD para recomendar alternativas de pastillas.")
 }
 
-System_Ext(keycloak, "Gestor de Identidades", "Keycloak", "Autenticación, validación de usuarios y roles JWT.")
-
 Rel(gerente, spa, "Usa", "HTTPS")
 Rel(vendedor, spa, "Usa", "HTTPS")
 
-Rel(spa, keycloak, "Inicia Sesión", "OAuth2 / OIDC")
-Rel(spa, backend, "Consume API REST", "JSON/HTTPS")
+Rel(spa, backend, "Inicia sesión y consume API REST", "JSON/HTTPS (JWT Bearer)")
 
-Rel(backend, keycloak, "Valida Tokens JWT", "JWKS/HTTPS")
 Rel(backend, db, "Lee y escribe datos", "JDBC")
 Rel(backend, chatbot, "Consulta recomendaciones", "API Interna")
 Rel(chatbot, db, "Consulta propiedades de productos", "JDBC/VectorSearch")
@@ -71,19 +65,17 @@ El Diagrama de Componentes hace "zoom" dentro de un contenedor específico (en e
 
 title Diagrama de Componentes - Monolito API (Backend)
 
-Container(spa, "Aplicación Web (Frontend)", "Angular", "Interfaz de usuario.")
+Container(spa, "Aplicación Web (Frontend)", "React + Vite", "Interfaz de usuario.")
 ContainerDb(db, "Base de Datos", "PostgreSQL", "Almacena datos del negocio.")
-System_Ext(keycloak, "Keycloak Auth", "OAuth2", "Provee seguridad.")
 
 Container_Boundary(backend_api, "Monolito API (Spring Boot)") {
-    Component(security_config, "Módulo de Seguridad", "Spring Security, JWT", "Intercepta peticiones, valida el token con Keycloak.")
-    Component(ventas_module, "Módulo de Ventas", "REST Controller, Service", "Lógica de creación y anulación de ventas.")
+    Component(security_config, "Módulo de Seguridad", "Spring Security, JWT nativo", "Filtro JWT, autenticación con BCrypt y roles ROLE_OWNER/ROLE_SELLER.")
+    Component(ventas_module, "Módulo de Ventas", "REST Controller, Service", "Lógica de creación de ventas con usuario autenticado.")
     Component(productos_module, "Módulo de Productos", "REST Controller, Service", "Catálogo y propiedades de productos.")
     Component(categorias_module, "Módulo de Categorías/Lab", "REST Controller, Service", "Clasificación e inventario base.")
 }
 
 Rel(spa, security_config, "Peticiones a endpoints", "JSON/HTTPS")
-Rel(security_config, keycloak, "Verifica firma de token JWKS", "HTTPS")
 
 Rel(security_config, ventas_module, "Enruta peticiones autenticadas a")
 Rel(security_config, productos_module, "Enruta peticiones autenticadas a")

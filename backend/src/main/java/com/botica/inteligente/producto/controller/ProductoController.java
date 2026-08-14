@@ -1,6 +1,6 @@
 package com.botica.inteligente.producto.controller;
 
-import com.botica.inteligente.producto.dto.request.EstadoRequest;
+import com.botica.inteligente.shared.dto.request.EstadoRequest;
 import com.botica.inteligente.producto.dto.request.ProductoCreateRequest;
 import com.botica.inteligente.producto.dto.request.ProductoFilter;
 import com.botica.inteligente.producto.dto.request.ProductoUpdateRequest;

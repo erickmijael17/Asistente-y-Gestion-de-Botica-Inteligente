@@ -14,7 +14,4 @@ public class AuthRegisterRequest {
     private String nombres;
     
     private String apellidos;
-    
-    @NotBlank(message = "Los roles son obligatorios")
-    private String roles;
 }

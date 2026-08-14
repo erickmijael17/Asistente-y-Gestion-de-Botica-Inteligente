@@ -1,9 +1,10 @@
 import axios from 'axios';
 
-/** Base API sin sufijo /v1 — auth usa /auth/* y recursos usan /v1/* */
+export const EVENTO_SESION_EXPIRADA = 'botica:sesion-expirada';
+
 function resolveApiBaseUrl(): string {
-  const raw = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
-  return raw.replace(/\/v1\/?$/, '').replace(/\/$/, '');
+  const raw = import.meta.env.VITE_API_URL ?? '/api';
+  return raw.replace(/\/$/, '');
 }
 
 const api = axios.create({
@@ -26,10 +27,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('username');
-      localStorage.removeItem('roles');
-      localStorage.removeItem('userId');
+      window.dispatchEvent(new Event(EVENTO_SESION_EXPIRADA));
     }
     return Promise.reject(error);
   },

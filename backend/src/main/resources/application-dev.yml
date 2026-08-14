@@ -4,10 +4,10 @@ spring:
     username: ${DB_USERNAME:botica_user}
     password: ${DB_PASSWORD:botica_password}
   jpa:
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
   security:
     jwt:
       secret: ${JWT_SECRET:482e9603e5c9425026df2314545582f3482e9603e5c9425026df2314545582f3}
