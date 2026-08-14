@@ -16,6 +16,7 @@ import com.botica.inteligente.producto.entity.Producto;
 import com.botica.inteligente.producto.enums.TipoProducto;
 import com.botica.inteligente.producto.mapper.ProductoMapperImpl;
 import com.botica.inteligente.producto.repository.ProductoRepository;
+import com.botica.inteligente.producto.service.impl.ProductoServiceImpl;
 import com.botica.inteligente.shared.exception.ConflictException;
 import com.botica.inteligente.shared.exception.ResourceNotFoundException;
 import java.math.BigDecimal;

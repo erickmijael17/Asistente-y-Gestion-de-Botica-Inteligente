@@ -40,19 +40,19 @@ public class VentaController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('OWNER', 'SELLER')")
     public ApiResponse<VentaResponse> findById(@PathVariable Long id) {
-        return ApiResponse.ok(ventaService.findById(id));
+        return ApiResponse.ok("Venta obtenida correctamente", ventaService.findById(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('OWNER', 'SELLER')")
     public ApiResponse<VentaResponse> create(@Valid @RequestBody VentaCreateRequest request) {
-        return ApiResponse.created(ventaService.create(request), "Venta registrada exitosamente");
+        return ApiResponse.ok("Venta registrada exitosamente", ventaService.create(request));
     }
 
     @PatchMapping("/{id}/anular")
     @PreAuthorize("hasRole('OWNER')")
     public ApiResponse<VentaResponse> anular(@PathVariable Long id) {
-        return ApiResponse.ok(ventaService.anular(id), "Venta anulada exitosamente");
+        return ApiResponse.ok("Venta anulada exitosamente", ventaService.anular(id));
     }
 }
