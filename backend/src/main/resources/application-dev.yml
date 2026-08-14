@@ -4,15 +4,14 @@ spring:
     username: ${DB_USERNAME:botica_user}
     password: ${DB_PASSWORD:botica_password}
   jpa:
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
   security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/botica-inteligente}
+    jwt:
+      secret: ${JWT_SECRET:482e9603e5c9425026df2314545582f3482e9603e5c9425026df2314545582f3}
+      expiration: ${JWT_EXPIRATION:86400000}
 
 springdoc:
   swagger-ui:
@@ -28,4 +27,5 @@ logging:
 app:
   cors:
     allowed-origins:
-      - http://localhost:4200
+      - http://localhost:5173
+      - http://127.0.0.1:5173

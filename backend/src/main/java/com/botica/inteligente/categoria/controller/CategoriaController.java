@@ -3,7 +3,7 @@ package com.botica.inteligente.categoria.controller;
 import com.botica.inteligente.categoria.dto.request.CategoriaCreateRequest;
 import com.botica.inteligente.categoria.dto.request.CategoriaFilter;
 import com.botica.inteligente.categoria.dto.request.CategoriaUpdateRequest;
-import com.botica.inteligente.categoria.dto.request.EstadoRequest;
+import com.botica.inteligente.shared.dto.request.EstadoRequest;
 import com.botica.inteligente.categoria.dto.response.CategoriaResponse;
 import com.botica.inteligente.categoria.service.CategoriaService;
 import com.botica.inteligente.shared.response.ApiResponse;

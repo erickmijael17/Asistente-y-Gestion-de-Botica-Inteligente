@@ -39,8 +39,8 @@ class DatabaseMigrationIntegrationTest {
     void flywayCreatesCatalogTablesAndInitialData() {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
 
-        Integer categorias = jdbcTemplate.queryForObject("select count(*) from categorias", Integer.class);
-        Integer laboratorios = jdbcTemplate.queryForObject("select count(*) from laboratorios", Integer.class);
+        Integer categorias = jdbcTemplate.queryForObject("select count(*) from botica.categorias", Integer.class);
+        Integer laboratorios = jdbcTemplate.queryForObject("select count(*) from botica.laboratorios", Integer.class);
 
         assertThat(categorias).isGreaterThanOrEqualTo(6);
         assertThat(laboratorios).isGreaterThanOrEqualTo(2);

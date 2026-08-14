@@ -30,11 +30,6 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.CONFLICT, "El registro ya existe o incumple una restriccion unica", request.getRequestURI());
     }
 
-    @ExceptionHandler(InvalidRequestException.class)
-    public ResponseEntity<ApiErrorResponse> invalid(InvalidRequestException ex, HttpServletRequest request) {
-        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
-    }
-
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiErrorResponse> business(BusinessException ex, HttpServletRequest request) {
         return error(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request.getRequestURI());
@@ -57,6 +52,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> unauthorized(AuthenticationCredentialsNotFoundException ex, HttpServletRequest request) {
         return error(HttpStatus.UNAUTHORIZED, "Autenticacion requerida", request.getRequestURI());
+    }
+
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    public ResponseEntity<ApiErrorResponse> badCredentials(org.springframework.security.authentication.BadCredentialsException ex, HttpServletRequest request) {
+        return error(HttpStatus.UNAUTHORIZED, "Credenciales incorrectas", request.getRequestURI());
     }
 
     @ExceptionHandler(AccessDeniedException.class)

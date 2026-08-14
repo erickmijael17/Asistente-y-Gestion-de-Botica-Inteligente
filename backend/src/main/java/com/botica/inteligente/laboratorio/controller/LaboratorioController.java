@@ -1,6 +1,6 @@
 package com.botica.inteligente.laboratorio.controller;
 
-import com.botica.inteligente.laboratorio.dto.request.EstadoRequest;
+import com.botica.inteligente.shared.dto.request.EstadoRequest;
 import com.botica.inteligente.laboratorio.dto.request.LaboratorioCreateRequest;
 import com.botica.inteligente.laboratorio.dto.request.LaboratorioFilter;
 import com.botica.inteligente.laboratorio.dto.request.LaboratorioUpdateRequest;

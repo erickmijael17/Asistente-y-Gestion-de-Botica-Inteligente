@@ -3,136 +3,115 @@
 Sistema web para la gestión integral de una botica, organizado en dos componentes:
 
 - `backend/` — Backend monolítico modular en Spring Boot
-- `frontend/` — Aplicación web Angular (por el momento vacía)
+- `frontend/` — Aplicación web React + Vite
 
 ## Visión del Proyecto
+
 El sistema permite gestionar **ventas**, **inventario**, generar **reportes** y administrar **alertas**. Está diseñado para dos tipos de usuarios:
+
 - **Gerente (Dueño)**: Supervisa reportes, ventas e inventario.
 - **Vendedor (Farmacéutico)**: Realiza ventas y atiende a los clientes.
 
-Adicionalmente, el sistema cuenta con un **Chatbot IA** conectado directamente a nuestra base de datos. Este chatbot permite consultar información médica (ej. "pastillas para la fiebre") y devuelve un abanico de alternativas médicas basadas en nuestro inventario. De este modo, los vendedores pueden ofrecer mayor variedad de productos a los usuarios en lugar de limitarse siempre a los mismos medicamentos conocidos.
+Adicionalmente, el sistema contará con un **Chatbot IA** conectado a la base de datos de productos (pendiente de implementación).
 
-[Ver Modelado de Arquitectura C4](backend/docs/architecture/c4-model.md)
+[Ver Modelado de Arquitectura C4](backend/docs/architecture/c4-model.md)  
+[Ver Integración Frontend-Backend](frontend/docs/INTEGRACION_BACKEND.md)
 
-## Tecnologias
+## Tecnologías
 
-- Java 22
-- Spring Boot 3.3.5
-- Spring Web, Data JPA, Validation, Security y OAuth 2.0 Resource Server
-- Keycloak
-- PostgreSQL
-- Flyway
-- Lombok
-- MapStruct
-- Springdoc OpenAPI / Swagger
-- JUnit 5, Mockito y Testcontainers
-- Docker Compose
+### Backend
+
+- Java 22, Spring Boot 3.3.5
+- Spring Web, Data JPA, Validation, Security
+- JWT nativo (io.jsonwebtoken)
+- PostgreSQL, Flyway, Docker Compose
+- Lombok, MapStruct, Springdoc OpenAPI
+- JUnit 5, Mockito, Testcontainers
+
+### Frontend
+
+- React 19, TypeScript, Vite 8
+- Tailwind CSS 4, Axios, Recharts
 
 ## Levantar infraestructura
 
 1. Crear archivo `.env` desde `backend/.env.example`.
-2. Levantar PostgreSQL y Keycloak (desde `backend/`):
+2. Levantar PostgreSQL (desde `backend/`):
 
 ```bash
 docker compose up -d
 ```
 
-Servicios:
-
-- PostgreSQL: `localhost:5432`, base `botica_inteligente_db`
-- Keycloak: `http://localhost:8081`
-- Realm importado: `botica-inteligente`
-- Roles: `OWNER`, `SELLER`
-- Clientes: `botica-backend`, `botica-frontend`
+Servicio: PostgreSQL en `localhost:5432`, base `botica_inteligente_db`.
 
 ## Ejecutar backend
 
 Requisito: JDK 22 activo en `JAVA_HOME`.
 
 ```bash
+cd backend
 mvn clean test
 mvn spring-boot:run
 ```
 
-Perfil por defecto: `dev`. Ejecutar estos comandos dentro de `backend/`.
+Swagger: `http://localhost:8080/swagger-ui.html`  
+Health: `http://localhost:8080/actuator/health`
 
-Swagger:
+## Ejecutar frontend
 
-```text
-http://localhost:8080/swagger-ui.html
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
 ```
 
-Health:
+En desarrollo, Vite hace de proxy: el navegador llama a `/api` y Vite reenvía a `http://localhost:8080/api` (sin errores CORS). Para producción indicar la URL absoluta en `VITE_API_URL`.
 
-```text
-http://localhost:8080/actuator/health
-```
+UI: `http://localhost:5173`
 
 ## Variables de entorno principales
+
+### Backend
 
 ```text
 SPRING_PROFILES_ACTIVE=dev
 DB_URL=jdbc:postgresql://localhost:5432/botica_inteligente_db
 DB_USERNAME=botica_user
 DB_PASSWORD=botica_password
-KEYCLOAK_ISSUER_URI=http://localhost:8081/realms/botica-inteligente
-CORS_ALLOWED_ORIGINS=http://localhost:4200
+JWT_SECRET=<secreto-base64>
+CORS_ALLOWED_ORIGINS=http://localhost:5173
 ```
 
-## Endpoints de fase 1
+### Frontend
 
-Categorias:
+```text
+VITE_API_URL=/api        # dev (proxy Vite)
+VITE_API_URL=https://api.tu-dominio.com/api   # producción
+```
 
-- `GET /api/v1/categorias`
-- `GET /api/v1/categorias/{id}`
-- `POST /api/v1/categorias`
-- `PUT /api/v1/categorias/{id}`
-- `PATCH /api/v1/categorias/{id}/estado`
+## Endpoints principales
 
-Laboratorios:
-
-- `GET /api/v1/laboratorios`
-- `GET /api/v1/laboratorios/{id}`
-- `POST /api/v1/laboratorios`
-- `PUT /api/v1/laboratorios/{id}`
-- `PATCH /api/v1/laboratorios/{id}/estado`
-
-Productos:
-
-- `GET /api/v1/productos`
-- `GET /api/v1/productos/{id}`
-- `GET /api/v1/productos/codigo-barras/{codigoBarras}`
-- `POST /api/v1/productos`
-- `PUT /api/v1/productos/{id}`
-- `PATCH /api/v1/productos/{id}/estado`
+| Recurso | Base path |
+|---------|-----------|
+| Auth | `/api/auth/login`, `/api/auth/register` |
+| Categorías | `/api/v1/categorias` |
+| Laboratorios | `/api/v1/laboratorios` |
+| Productos | `/api/v1/productos` |
+| Ventas | `/api/v1/ventas` |
 
 ## Seguridad
 
-El backend valida JWT emitidos por Keycloak como OAuth 2.0 Resource Server.
+Autenticación con **JWT nativo** (Spring Security). El frontend envía `Authorization: Bearer <token>`.
 
-Rutas publicas:
+Roles: `ROLE_OWNER` (Gerente), `ROLE_SELLER` (Vendedor).
 
-- `/actuator/health`
-- `/v3/api-docs/**`
-- `/swagger-ui/**`
-- `/swagger-ui.html`
+- `GET` en catálogo: OWNER o SELLER
+- `POST`, `PUT`, `PATCH` en catálogo: solo OWNER
+- Ventas: crear OWNER o SELLER; anular solo OWNER
 
-Reglas:
+## Alcance actual
 
-- `GET` de categorias, laboratorios y productos: `OWNER` o `SELLER`
-- `POST`, `PUT`, `PATCH`: solo `OWNER`
+Implementado: usuarios, seguridad JWT, catálogo (categorías, laboratorios, productos), ventas, frontend conectado al backend.
 
-Los roles de Keycloak se leen desde `realm_access.roles` y `resource_access`, y se convierten a `ROLE_OWNER` y `ROLE_SELLER`.
-
-## Migraciones
-
-- `V1__create_base_tables.sql`: `usuario_referencia`
-- `V2__create_catalog_tables.sql`: `categorias`, `laboratorios`
-- `V3__create_product_table.sql`: `productos`
-- `V4__insert_initial_catalog_data.sql`: categorias generales y laboratorios demo
-- `V5__create_ventas_tables.sql`: Tablas de transacciones de ventas y detalles
-
-## Alcance Actual
-Hasta la fecha se encuentran implementados los módulos Base (Usuarios, Seguridad, Keycloak), Catálogo (Categorías, Laboratorios, Productos) y Transaccional (Ventas). 
-
-*Pendiente de implementar: Inventario, Lotes, Compras, Proveedores, Clientes, Pagos, Reportes y el Chatbot IA.*
+Pendiente: inventario, lotes, compras, proveedores, clientes, pagos, reportes, chatbot IA.

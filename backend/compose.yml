@@ -16,19 +16,54 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - botica-network
 
-  botica-keycloak:
-    image: quay.io/keycloak/keycloak:25.0
-    container_name: botica-keycloak
+  botica-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: botica-backend
     restart: unless-stopped
-    command: start-dev --import-realm
     environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://botica-postgres:5432/${POSTGRES_DB:-botica_inteligente_db}
+      DB_USERNAME: ${POSTGRES_USER:-botica_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-botica_password}
+      JWT_SECRET: ${JWT_SECRET:-Ym90aWNhLWludGVsaWdlbnRlLWp3dC1zZWNyZXQtcGFyYS1kZXNhcnJvbGxvLWRlbW8tMjAyNg==}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-3600000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
-      - "8081:8080"
-    volumes:
-      - ./docker/keycloak:/opt/keycloak/data/import:ro
+      - "8080:8080"
+    depends_on:
+      botica-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - botica-network
+
+  botica-frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: botica-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      botica-backend:
+        condition: service_healthy
+    networks:
+      - botica-network
 
 volumes:
   botica_postgres_data:
+
+networks:
+  botica-network:
+    driver: bridge

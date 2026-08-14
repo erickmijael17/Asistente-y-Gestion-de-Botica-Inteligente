@@ -1,4 +1,4 @@
-package com.botica.inteligente.categoria.dto.request;
+package com.botica.inteligente.shared.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 
