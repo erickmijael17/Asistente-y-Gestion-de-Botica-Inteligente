@@ -7,42 +7,43 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers(disabledWithoutDocker = true)
+/**
+ * Verifica que Hibernate ddl-auto:update crea el esquema via @Entity.
+ * Requiere PostgreSQL nativo en localhost:5432 con BD botica_inteligente_db
+ * creada via backend/scripts/init-db.sql (ahora sin Flyway, las tablas se generan por JPA).
+ */
 @SpringBootTest
-@ActiveProfiles("test")
 class DatabaseMigrationIntegrationTest {
-
-    @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16")
-            .withDatabaseName("botica_inteligente_test")
-            .withUsername("test")
-            .withPassword("test");
 
     @Autowired
     private DataSource dataSource;
 
-    @DynamicPropertySource
-    static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
-
     @Test
-    void flywayCreatesCatalogTablesAndInitialData() {
+    void hibernateCreatesTablesViaEntities() {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
 
-        Integer categorias = jdbcTemplate.queryForObject("select count(*) from botica.categorias", Integer.class);
-        Integer laboratorios = jdbcTemplate.queryForObject("select count(*) from botica.laboratorios", Integer.class);
+        // Verifica que las tablas existen (ddl-auto:update las crea desde @Entity)
+        Integer categoriasTable = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema='botica' AND table_name='categorias'",
+                Integer.class);
+        Integer productosTable = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema='botica' AND table_name='productos'",
+                Integer.class);
+        Integer usuarioTable = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema='botica' AND table_name='usuario'",
+                Integer.class);
+        Integer ventasTable = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema='botica' AND table_name='ventas'",
+                Integer.class);
 
-        assertThat(categorias).isGreaterThanOrEqualTo(6);
-        assertThat(laboratorios).isGreaterThanOrEqualTo(2);
+        assertThat(categoriasTable).isEqualTo(1);
+        assertThat(productosTable).isEqualTo(1);
+        assertThat(usuarioTable).isEqualTo(1);
+        assertThat(ventasTable).isEqualTo(1);
+
+        // Las tablas pueden estar vacias (sin seed), solo verifica que son consultables
+        Integer categoriasCount = jdbcTemplate.queryForObject("select count(*) from botica.categorias", Integer.class);
+        assertThat(categoriasCount).isGreaterThanOrEqualTo(0);
     }
 }

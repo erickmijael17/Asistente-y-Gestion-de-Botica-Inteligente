@@ -21,12 +21,13 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse register(AuthRegisterRequest request) {
-        if (repository.findByUsername(request.getUsername()).isPresent()) {
+        String username = request.getUsername().trim();
+        if (repository.existsByUsernameIgnoreCase(username)) {
             throw new ConflictException("Username already exists");
         }
         
         Usuario user = new Usuario();
-        user.setUsername(request.getUsername());
+        user.setUsername(username);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRoles("ROLE_SELLER");
         user.setNombres(request.getNombres());
@@ -46,14 +47,15 @@ public class AuthService {
     }
 
     public AuthResponse login(AuthLoginRequest request) {
+        String username = request.getUsername().trim();
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
+                        username,
                         request.getPassword()
                 )
         );
         
-        var user = repository.findByUsername(request.getUsername())
+        var user = repository.findByUsernameIgnoreCase(username)
                 .orElseThrow();
                 
         CustomUserDetails userDetails = new CustomUserDetails(user);
