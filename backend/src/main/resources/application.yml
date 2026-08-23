@@ -1,26 +1,33 @@
 spring:
   application:
     name: Asistente-y-Gestion-de-Botica-Inteligente
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/botica_inteligente_db?currentSchema=botica}
+    username: ${DB_USERNAME:botica_user}
+    password: ${DB_PASSWORD:botica_password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     open-in-view: false
-  flyway:
-    enabled: true
-    locations: classpath:db/migration/postgresql
-    schemas: botica
-    default-schema: botica
-    create-schemas: true
+    properties:
+      hibernate:
+        default_schema: botica
+        format_sql: false
+        hbm2ddl.create_namespaces: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/botica-inteligente}
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8081/realms/botica-inteligente/protocol/openid-connect/certs}
 
 server:
   port: ${SERVER_PORT:8080}
 
 app:
   cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
     allowed-methods:
       - GET
       - POST
@@ -33,3 +40,14 @@ app:
       - Content-Type
       - Accept
     allow-credentials: true
+
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled: true
+
+logging:
+  level:
+    org.hibernate.SQL: info
+    org.hibernate.orm.jdbc.bind: warn

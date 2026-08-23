@@ -8,7 +8,7 @@ El proyecto se organiza en dos carpetas principales:
 
 ```text
 backend/   -> Backend monolitico modular en Spring Boot
-frontend/  -> Frontend (aplicación web React + Vite)
+frontend/  -> Frontend (por el momento vacia, aplicacion web Angular)
 ```
 
 Todos los comandos Maven, Docker Compose y rutas de codigo mencionados en esta guia se ejecutan dentro de `backend/`.
@@ -30,9 +30,9 @@ El backend es un **monolito modular** en Spring Boot. No convertir a microservic
 - Spring Web
 - Spring Data JPA
 - Spring Security
-- Spring Security JWT (io.jsonwebtoken)
-- PostgreSQL
-- Flyway
+- OAuth 2.0 Resource Server
+- Keycloak
+- PostgreSQL 16 (via Docker `botica-postgres`)
 - Bean Validation
 - Lombok
 - MapStruct
@@ -40,7 +40,7 @@ El backend es un **monolito modular** en Spring Boot. No convertir a microservic
 - JUnit 5
 - Mockito
 - Testcontainers
-- Docker Compose
+- Docker Compose (solo perfil `dev` - monolito)
 
 ## Paquete base
 
@@ -96,22 +96,22 @@ No crear carpetas globales para todos los controllers, entities o repositories. 
 
 ## Alcance actual
 
-La fase actual incluye solo:
+La fase actual incluye solo (monolito `dev`):
 
-- Configuracion general
-- Seguridad con JWT nativo (Spring Security)
+- Configuracion general (single `application.yml`)
+- Seguridad con Keycloak (OAuth2 Resource Server)
 - Respuestas estandar
 - Manejo global de excepciones
 - Auditoria de fechas
-- Autenticacion local con BD (entidad Usuario y encriptacion BCrypt)
+- Usuario de referencia de Keycloak
 - Categorias
 - Laboratorios
 - Productos
 - Ventas
-- Migraciones Flyway
+- DDL via `@Entity` + `ddl-auto:update` (sin Flyway, `resources` limpio)
 - Swagger
 - Pruebas
-- Docker Compose para PostgreSQL
+- Docker Compose para PostgreSQL y Keycloak (`dev`)
 
 No implementar todavia:
 
@@ -144,12 +144,12 @@ No implementar todavia:
 - Usar SLF4J para logs.
 - No dejar `TODO`.
 - No incluir secretos reales.
-- No usar `ddl-auto: create` ni `ddl-auto: update`.
-- Mantener `ddl-auto: validate`.
+- Usar `ddl-auto: update` en `dev` con `resources` limpio (single `application.yml`).
+- Tablas se generan via `@Entity`/`@Table` por modulo + `hibernate.default_schema=botica` y `hbm2ddl.create_namespaces=true`.
 
 ## Seguridad
 
-La autenticación se maneja internamente usando Spring Security y JSON Web Tokens (JWT). El backend debe generar, firmar y validar tokens JWT.
+Keycloak es el proveedor de identidad. Spring Boot funciona como OAuth 2.0 Resource Server.
 
 Roles validos:
 
@@ -165,12 +165,14 @@ ROLE_OWNER
 ROLE_SELLER
 ```
 
-Los roles deben extraerse del token JWT (claim `roles` o similar) e inyectarse como autoridades en el contexto de seguridad.
+Los roles deben extraerse desde:
+
+- `realm_access.roles`
+- `resource_access`
 
 Rutas publicas permitidas:
 
 ```text
-/api/auth/**
 /actuator/health
 /v3/api-docs/**
 /swagger-ui/**
@@ -184,44 +186,24 @@ Reglas generales:
 
 Tambien usar `@PreAuthorize` en metodos sensibles.
 
-Las contraseñas deben almacenarse en PostgreSQL de forma obligatoria usando BCrypt (`PasswordEncoder`).
+No almacenar contrasenas en PostgreSQL.
 
 ## Base de datos y migraciones
 
-Usar Flyway para cambios de esquema.
+Esquema generado via `@Entity` + `ddl-auto:update` con `single application.yml` para mantener `resources` limpio (solo dev monolito).
 
-Ubicacion:
+Ubicacion tablas: por modulo `*/entity/*.java` con `@Entity`/`@Table` + `shared/audit/AuditableEntity`.
 
-```text
-backend/src/main/resources/db/migration
-```
+No se usa `backend/src/main/resources/db/migration` ni Flyway en `dev` (eliminados para evitar sobrecarga de `resources`). Tablas se crean al arrancar contra Docker `botica-postgres` en `localhost:5432` con `schema botica`.
 
-Migraciones existentes:
-
-```text
-V1__create_base_tables.sql
-V2__create_catalog_tables.sql
-V3__create_product_table.sql
-V4__insert_initial_catalog_data.sql
-V5__create_ventas_tables.sql
-V6__refactor_usuario_table.sql
-V7__insert_initial_usuario.sql
-V8__update_usuario_password.sql
-V9__set_gerente_password.sql
-V10__add_version_to_ventas.sql
-```
-
-Para nuevas migraciones, crear una version incremental `V6__...sql`, `V7__...sql`, etc. No modificar migraciones ya aplicadas salvo que el usuario lo pida explicitamente y el entorno sea de desarrollo descartable.
+Si se requiere versionado en prod a futuro, reintroducir Flyway con `ddl-auto:validate` y `V1__...sql`.
 
 ## Configuracion
 
 Perfiles:
 
 ```text
-application.yml
-application-dev.yml
-application-test.yml
-application-prod.yml
+application.yml  # unico, limpio - no usar application-dev/prod/test (eliminados)
 ```
 
 No escribir contrasenas reales en archivos del repositorio. Usar variables de entorno.
@@ -229,12 +211,10 @@ No escribir contrasenas reales en archivos del repositorio. Usar variables de en
 Variables principales:
 
 ```text
-SPRING_PROFILES_ACTIVE
 DB_URL
 DB_USERNAME
 DB_PASSWORD
-JWT_SECRET
-JWT_EXPIRATION
+KEYCLOAK_ISSUER_URI
 CORS_ALLOWED_ORIGINS
 ```
 
@@ -249,12 +229,20 @@ docker compose up -d
 Servicios:
 
 - `botica-postgres`
+- `botica-keycloak`
 
 PostgreSQL:
 
 ```text
 localhost:5432
 botica_inteligente_db
+```
+
+Keycloak:
+
+```text
+http://localhost:8081
+realm: botica-inteligente
 ```
 
 ## Validacion
@@ -294,8 +282,6 @@ Mantener pruebas para:
 No usar H2 para simular PostgreSQL.
 
 Si Testcontainers falla por Docker no disponible, reportar la causa exacta y no reemplazarlo por H2.
-
-Nota Testcontainers: con Docker Desktop moderno (Engine >= 29) hay que fijar `api.version=1.44` en `backend/src/test/resources/docker-java.properties`; de lo contrario la conexión falla con HTTP 400. Los tests de migraciones usan el esquema `botica` (`hibernate.default_schema` en `application-test.yml`).
 
 ## Git y archivos locales
 
