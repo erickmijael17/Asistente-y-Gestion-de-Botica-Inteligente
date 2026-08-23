@@ -16,6 +16,9 @@ spring:
         format_sql: false
         hbm2ddl.create_namespaces: true
   security:
+    jwt:
+      secret: ${JWT_SECRET:482e9603e5c9425026df2314545582f3482e9603e5c9425026df2314545582f3482e9603e5c9425026df2314545582f3}
+      expiration: ${JWT_EXPIRATION:86400000}
     oauth2:
       resourceserver:
         jwt:
