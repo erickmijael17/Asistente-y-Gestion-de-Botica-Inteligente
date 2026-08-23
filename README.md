@@ -20,13 +20,12 @@ Adicionalmente, el sistema cuenta con un **Chatbot IA** conectado directamente a
 - Spring Boot 3.3.5
 - Spring Web, Data JPA, Validation, Security y OAuth 2.0 Resource Server
 - Keycloak
-- PostgreSQL
-- Flyway
+- PostgreSQL 16 (Docker)
 - Lombok
 - MapStruct
 - Springdoc OpenAPI / Swagger
 - JUnit 5, Mockito y Testcontainers
-- Docker Compose
+- Docker Compose (dev monolito)
 
 ## Levantar infraestructura
 
@@ -47,14 +46,14 @@ Servicios:
 
 ## Ejecutar backend
 
-Requisito: JDK 22 activo en `JAVA_HOME`.
+Requisito: JDK 22 activo en `JAVA_HOME` y Docker `botica-postgres`/`botica-keycloak` arriba (`docker compose up -d`).
 
 ```bash
-mvn clean test
+mvn clean compile
 mvn spring-boot:run
 ```
 
-Perfil por defecto: `dev`. Ejecutar estos comandos dentro de `backend/`.
+Config unica: `backend/src/main/resources/application.yml` (sin perfiles, `resources` limpio). Ejecutar dentro de `backend/`.
 
 Swagger:
 
@@ -124,13 +123,11 @@ Reglas:
 
 Los roles de Keycloak se leen desde `realm_access.roles` y `resource_access`, y se convierten a `ROLE_OWNER` y `ROLE_SELLER`.
 
-## Migraciones
+## Base de datos (dev)
 
-- `V1__create_base_tables.sql`: `usuario_referencia`
-- `V2__create_catalog_tables.sql`: `categorias`, `laboratorios`
-- `V3__create_product_table.sql`: `productos`
-- `V4__insert_initial_catalog_data.sql`: categorias generales y laboratorios demo
-- `V5__create_ventas_tables.sql`: Tablas de transacciones de ventas y detalles
+Tablas generadas via `@Entity` + `ddl-auto:update` con `single application.yml` (sin Flyway, `resources` limpio). Cada modulo define su `@Entity`/`@Table` en `*/entity/*.java`.
+
+Al arrancar contra Docker `botica-postgres` (`localhost:5432`, `schema botica`) Hibernate crea `categorias`, `laboratorios`, `productos`, `usuario_referencia`, `ventas`, `venta_detalles` automaticamente. Para prod futuro se puede reintroducir Flyway con `validate`.
 
 ## Alcance Actual
 Hasta la fecha se encuentran implementados los módulos Base (Usuarios, Seguridad, Keycloak), Catálogo (Categorías, Laboratorios, Productos) y Transaccional (Ventas). 
