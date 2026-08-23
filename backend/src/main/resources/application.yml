@@ -16,9 +16,11 @@ spring:
         format_sql: false
         hbm2ddl.create_namespaces: true
   security:
-    jwt:
-      secret: ${JWT_SECRET:482e9603e5c9425026df2314545582f3482e9603e5c9425026df2314545582f3482e9603e5c9425026df2314545582f3}
-      expiration: ${JWT_EXPIRATION:86400000}
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/botica-inteligente}
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8081/realms/botica-inteligente/protocol/openid-connect/certs}
 
 server:
   port: ${SERVER_PORT:8080}
