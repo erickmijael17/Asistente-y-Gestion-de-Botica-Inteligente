@@ -29,14 +29,14 @@ Sistema web interno para gestión de botica: ventas, catálogo de productos y pa
 
 ## 3. Entorno de desarrollo
 
-### 3.1 Base de datos
+### 3.1 Base de datos (Docker, resources limpio)
 
 ```bash
 cd backend
-docker compose up -d
+docker compose up -d  # levanta botica-postgres:5432 y botica-keycloak:8081
 ```
 
-PostgreSQL queda en `localhost:5432`, base `botica_inteligente_db`.
+PostgreSQL `localhost:5432` base `botica_inteligente_db` schema `botica` (DDL via `@Entity` + `ddl-auto:update`, sin `db/migration`). Verificado `docker ps` healthy + `psql -U botica_user -c "\dt botica.*"`.
 
 ### 3.2 Backend
 
@@ -54,13 +54,13 @@ mvn spring-boot:run
 
 ```bash
 cd frontend
-cp .env.example .env.local
+cp .env.example .env.local  # VITE_API_URL=/api
 npm install
 npm run dev
 ```
 
 - UI: http://localhost:5173
-- Variable requerida: `VITE_API_URL=http://localhost:8080/api`
+- Variable requerida: `VITE_API_URL=/api` (dev usa proxy Vite `/api` -> `http://localhost:8080`, prod usa URL absoluta)
 
 ### 3.4 Verificar integración
 
@@ -73,14 +73,14 @@ npm run dev
 
 ## 4. Entorno de producción
 
-### 4.1 Variables backend
+### 4.1 Variables backend (single `application.yml`)
 
 ```env
-SPRING_PROFILES_ACTIVE=prod
-DB_URL=jdbc:postgresql://<HOST>:5432/botica_inteligente_db
+DB_URL=jdbc:postgresql://<HOST>:5432/botica_inteligente_db?currentSchema=botica
 DB_USERNAME=<USUARIO>
 DB_PASSWORD=<PASSWORD>
-JWT_SECRET=<SECRETO_BASE64_SEGURO>
+JWT_SECRET=<SECRETO_BASE64_SEGURO>  # + oauth2 issuer-uri si usa Keycloak
+KEYCLOAK_ISSUER_URI=http://<HOST>:8081/realms/botica-inteligente
 CORS_ALLOWED_ORIGINS=https://tu-dominio-frontend.com
 ```
 

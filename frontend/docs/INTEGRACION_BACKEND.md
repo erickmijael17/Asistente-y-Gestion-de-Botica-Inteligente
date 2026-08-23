@@ -67,7 +67,7 @@ El proxy de Vite es solo para desarrollo (elimina errores CORS). En producción 
 VITE_API_URL=/api
 ```
 
-En desarrollo, `vite.config.ts` define un proxy: `/api` → `http://localhost:8080`. CORS en backend (`application-dev.yml`) permite `http://localhost:5173` como respaldo.
+En desarrollo, `vite.config.ts:22` define proxy `/api` → `http://localhost:8080` (verificado `5173/api/auth/login` -> `8080/api/auth/login` OK). CORS en backend `application.yml:33` permite `http://localhost:5173`.
 
 ## Formato de respuesta
 
@@ -91,3 +91,10 @@ Auth devuelve directamente `{ token, userId, username, roles, type }`.
 - Despliegue con **múltiples clientes** (web, móvil, kiosko) con contratos distintos.
 
 Hasta entonces, mantener la integración directa es más simple, testeable y alineada con el monolito actual.
+
+## Verificación implícita 2026-08-23 (dev Docker)
+
+* **Infra:** `docker ps` `botica-postgres:16 Up healthy 5432` + `botica-keycloak Up 8081`, `application.yml:4` `jdbc:postgresql://localhost:5432/botica_inteligente_db?currentSchema=botica` + `ddl-auto:update` (resources limpio, sin `db/migration`)
+* **Backend:** `actuator/health 200 UP`, `v3/api-docs 200`, `CORS preflight 200`, `POST /api/auth/register` -> `ROLE_SELLER` + `POST /api/auth/login` -> JWT, `GET /api/v1/categorias` con `Bearer` OK, `POST /api/v1/categorias` como `ROLE_OWNER` OK
+* **Frontend -> Backend:** `Vite 5173` proxy `/api` -> `8080` verificado `POST http://localhost:5173/api/auth/login` -> token `ROLE_OWNER` y `GET http://localhost:5173/api/v1/categorias` -> `VitaminasTest` con paginación `ApiResponse<T>`
+* **DB:** `botica` 6 tablas (`categorias`, `laboratorios`, `productos`, `usuario`, `ventas`, `venta_detalles`) creadas por Hibernate

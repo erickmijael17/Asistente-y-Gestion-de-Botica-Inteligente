@@ -18,7 +18,7 @@ export function LoginScreen() {
     setError('');
     setCargando(true);
     try {
-      const respuesta = await authService.login({ username, password });
+      const respuesta = await authService.login({ username: username.trim(), password });
       iniciarSesion(respuesta.token, respuesta.userId, respuesta.username, respuesta.roles);
       navigate(esGerente(respuesta.roles) ? '/dashboard' : '/pos');
     } catch (err) {
