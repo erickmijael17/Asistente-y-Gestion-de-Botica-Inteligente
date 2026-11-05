@@ -88,3 +88,10 @@
 .user-session-label {
     -fx-font-weight: bold;
 }
+
+.kpi-card {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 8;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 8;
+}

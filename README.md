@@ -34,7 +34,7 @@ mvn clean test
 | 3 | Catalogo: categorias, laboratorios, productos | Hecha |
 | 4 | Inventario, lotes, kardex, compras | Hecha |
 | 5 | Ventas / punto de venta | Hecha |
-| 6 | Dashboard y escaneo EAN-13 | Pendiente |
+| 6 | Dashboard y escaneo EAN-13 | En curso (dashboard hecho) |
 | 7 | Asistente IA | Pendiente |
 
 Plan completo y reglas de negocio: [MIGRACION.md](MIGRACION.md). El proyecto web anterior esta en la rama `main`.

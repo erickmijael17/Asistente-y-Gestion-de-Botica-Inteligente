@@ -127,7 +127,7 @@ class VistasCatalogoTest {
 
     @Test
     void inventarioComprasYVentasCarganSinErrores() throws Exception {
-        for (String ruta : new String[] {"/view/inventario-view.fxml", "/view/compras-view.fxml", "/view/punto-venta-view.fxml", "/view/ventas-view.fxml"}) {
+        for (String ruta : new String[] {"/view/inventario-view.fxml", "/view/compras-view.fxml", "/view/punto-venta-view.fxml", "/view/ventas-view.fxml", "/view/dashboard-view.fxml"}) {
             CompletableFuture<Object> controlador = new CompletableFuture<>();
             Platform.runLater(() -> {
                 try {
