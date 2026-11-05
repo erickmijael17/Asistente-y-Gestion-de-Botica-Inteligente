@@ -86,6 +86,12 @@
             <version>${ikonli.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <!-- 2.0.5 es la ultima version compatible con Java 17 (desde 2.1 requiere Java 21) -->
+            <version>2.0.5</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
