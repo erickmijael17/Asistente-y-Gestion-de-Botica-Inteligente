@@ -94,6 +94,10 @@ public class Producto extends AuditableEntity {
     @Column(name = "stock_minimo", nullable = false)
     private Integer stockMinimo;
 
+    /** Costo promedio ponderado (sin IGV); lo mantiene el inventario al registrar compras. */
+    @Column(name = "costo_promedio", precision = 12, scale = 4)
+    private BigDecimal costoPromedio;
+
     @Column(name = "imagen_url", length = 500)
     private String imagenUrl;
 
