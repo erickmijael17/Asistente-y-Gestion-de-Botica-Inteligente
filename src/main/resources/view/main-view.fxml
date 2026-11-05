@@ -21,6 +21,7 @@
             <Button text="Categorias" onAction="#mostrarCategorias" maxWidth="Infinity" styleClass="navigation-button" />
             <Button text="Laboratorios" onAction="#mostrarLaboratorios" maxWidth="Infinity" styleClass="navigation-button" />
             <Button text="Ventas" onAction="#mostrarVentas" maxWidth="Infinity" styleClass="navigation-button" />
+            <Button fx:id="usuariosButton" text="Usuarios" onAction="#mostrarUsuarios" maxWidth="Infinity" styleClass="navigation-button" />
             <Region VBox.vgrow="ALWAYS" />
             <Button text="Cambiar tema" onAction="#alternarTema" maxWidth="Infinity" styleClass="theme-button" />
         </VBox>
@@ -32,6 +33,11 @@
                     <Label text="Gestion de botica" styleClass="eyebrow" />
                     <Label fx:id="tituloVista" text="Dashboard" styleClass="page-title" />
                 </VBox>
+                <Region HBox.hgrow="ALWAYS" />
+                <HBox spacing="12" alignment="CENTER_RIGHT">
+                    <Label fx:id="usuarioActual" text="" styleClass="user-session-label" />
+                    <Button text="Cerrar sesión" onAction="#cerrarSesion" />
+                </HBox>
             </HBox>
             <StackPane fx:id="areaContenido" VBox.vgrow="ALWAYS" styleClass="content-area" />
         </VBox>

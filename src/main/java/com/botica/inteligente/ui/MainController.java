@@ -2,29 +2,36 @@ package com.botica.inteligente.ui;
 
 import atlantafx.base.theme.PrimerDark;
 import atlantafx.base.theme.PrimerLight;
+import com.botica.inteligente.security.SesionActual;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import javafx.application.Platform;
 import javafx.application.Application;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Window;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@Scope("prototype")
 public class MainController {
 
     private final ApplicationContext applicationContext;
     private final Notificador notificador;
+    private final SesionActual sesionActual;
     private final Map<String, VistaEnCache> vistasEnCache = new HashMap<>();
     private boolean temaOscuro;
+    private Runnable accionCerrarSesion = () -> { };
 
     @FXML
     private StackPane areaContenido;
@@ -32,14 +39,35 @@ public class MainController {
     @FXML
     private Label tituloVista;
 
-    public MainController(ApplicationContext applicationContext, Notificador notificador) {
+    @FXML
+    private Label usuarioActual;
+
+    @FXML
+    private Button usuariosButton;
+
+    public MainController(
+        ApplicationContext applicationContext,
+        Notificador notificador,
+        SesionActual sesionActual
+    ) {
         this.applicationContext = applicationContext;
         this.notificador = notificador;
+        this.sesionActual = sesionActual;
     }
 
     @FXML
     private void initialize() {
+        sesionActual.usuarioAutenticado().ifPresentOrElse(
+            usuario -> usuarioActual.setText(usuario.nombreVisible() + " · " + usuario.rol()),
+            () -> usuarioActual.setText("Sesión no disponible")
+        );
+        usuariosButton.setVisible(sesionActual.esOwner());
+        usuariosButton.setManaged(sesionActual.esOwner());
         mostrarVista("Dashboard", "/view/dashboard-view.fxml");
+    }
+
+    public void setAlCerrarSesion(Runnable accionCerrarSesion) {
+        this.accionCerrarSesion = accionCerrarSesion == null ? () -> { } : accionCerrarSesion;
     }
 
     @FXML
@@ -65,6 +93,24 @@ public class MainController {
     @FXML
     private void mostrarVentas() {
         mostrarVista("Ventas", "/view/ventas-view.fxml");
+    }
+
+    @FXML
+    private void mostrarUsuarios() {
+        if (!sesionActual.esOwner()) {
+            notificador.mostrar(
+                areaContenido.getScene() == null ? null : areaContenido.getScene().getWindow(),
+                "No tiene permisos para gestionar usuarios"
+            );
+            return;
+        }
+        mostrarVista("Usuarios", "/view/usuarios-view.fxml");
+    }
+
+    @FXML
+    private void cerrarSesion() {
+        sesionActual.cerrarSesion();
+        Platform.runLater(accionCerrarSesion);
     }
 
     @FXML
