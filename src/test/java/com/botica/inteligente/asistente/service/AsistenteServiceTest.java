@@ -107,6 +107,20 @@ class AsistenteServiceTest {
     }
 
     @Test
+    void variasDolenciasProponenProductosParaCadaUnaIndicandoLoQueCubren() {
+        RespuestaAsistente respuesta = asistente.consultar("tengo fiebre y alergia");
+
+        List<String> nombres = respuesta.sugerencias().stream().map(Sugerencia::nombre).toList();
+        assertTrue(nombres.contains("Loratadina"));
+        assertTrue(nombres.contains("Ibuprofeno"));
+        Sugerencia loratadina = respuesta.sugerencias().stream().filter(s -> s.nombre().equals("Loratadina")).findFirst().orElseThrow();
+        Sugerencia ibuprofeno = respuesta.sugerencias().stream().filter(s -> s.nombre().equals("Ibuprofeno")).findFirst().orElseThrow();
+        assertEquals(List.of("alergia"), loratadina.cubre());
+        assertEquals(List.of("fiebre"), ibuprofeno.cubre());
+        assertTrue(respuesta.texto().contains("confirme con el paciente"));
+    }
+
+    @Test
     void ordenaPrimeroLosProductosConStock() {
         RespuestaAsistente respuesta = asistente.consultar("fiebre");
 

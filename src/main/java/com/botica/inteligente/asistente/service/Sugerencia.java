@@ -2,6 +2,7 @@ package com.botica.inteligente.asistente.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /** Producto del catalogo propuesto por el asistente, con su ficha y disponibilidad. */
 public record Sugerencia(
@@ -24,7 +25,9 @@ public record Sugerencia(
     String condicionesAlmacenamiento,
     String fuenteInformacion,
     LocalDate fechaInformacion,
-    int puntaje
+    int puntaje,
+    /** Palabras de la consulta (dolencias) que este producto cubre segun su ficha. */
+    List<String> cubre
 ) {
 
     public boolean hayStock() {

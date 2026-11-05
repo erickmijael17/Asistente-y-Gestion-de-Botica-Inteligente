@@ -268,6 +268,17 @@ class CatalogoServiceTest {
     }
 
     @Test
+    void obtenerDevuelveElProductoOFallaSiNoExiste() {
+        CategoriaResumen categoria = categoriaService.crear(new CategoriaComando("Cat", null));
+        LaboratorioResumen laboratorio = laboratorioService.crear(laboratorio("Lab", null));
+        ProductoResumen creado = productoService
+            .crear(producto("P-001", null, categoria.id(), laboratorio.id())).producto();
+
+        assertEquals("P-001", productoService.obtener(creado.id()).datos().codigoInterno());
+        assertThrows(NegocioException.class, () -> productoService.obtener(999_999L));
+    }
+
+    @Test
     void sellerPuedeListarPeroNoCrearNiCambiarEstadoDeProductos() {
         CategoriaResumen categoria = categoriaService.crear(new CategoriaComando("Cat", null));
         LaboratorioResumen laboratorio = laboratorioService.crear(laboratorio("Lab", null));

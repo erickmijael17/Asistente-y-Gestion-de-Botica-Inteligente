@@ -39,6 +39,8 @@ mvn clean test
 
 El asistente busca solo en el catalogo propio (sintoma, nombre o principio activo), sugiere alternativas con stock y precio, y funciona sin internet ni claves externas.
 
+En la pantalla **Vender** aparece como panel lateral derecho: el farmaceutico escribe las dolencias del paciente (por ejemplo "fiebre y dolor de garganta"), el asistente propone las pastillas del inventario que sirven para cada una (con "Sirve para: ...", stock y precio) y, despues de validarlas con el paciente, se agregan al carrito con "Agregar al carrito". Las sugerencias son orientativas: la decision y la entrega las valida siempre una persona.
+
 ## Configuracion opcional
 
 Se puede sobrescribir en `application.yml` o con variables de entorno:

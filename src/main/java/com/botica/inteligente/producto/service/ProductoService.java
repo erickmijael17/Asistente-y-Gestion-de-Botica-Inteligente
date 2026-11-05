@@ -54,6 +54,12 @@ public class ProductoService {
             .map(this::resumen);
     }
 
+    @Transactional(readOnly = true)
+    public ProductoResumen obtener(Long id) {
+        sesionActual.exigirAutenticado();
+        return resumen(buscar(id));
+    }
+
     /** Busqueda exacta por codigo de barras (base para el escaneo EAN-13). */
     @Transactional(readOnly = true)
     public Optional<ProductoResumen> buscarPorCodigoBarras(String codigoBarras) {

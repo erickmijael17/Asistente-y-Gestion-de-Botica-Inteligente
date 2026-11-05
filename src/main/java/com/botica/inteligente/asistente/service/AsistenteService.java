@@ -166,7 +166,7 @@ public class AsistenteService {
             for (Producto otro : productoRepository
                 .findAll(ProductoSpecification.filtrar(new ProductoFiltro(null, true, null, null, null)))) {
                 if (!otro.getId().equals(producto.getId()) && normalizar(otro.getPrincipioActivo()).equals(principio)) {
-                    mismas.add(new Candidato(otro, 1, 0, stock.getOrDefault(otro.getId(), 0L)));
+                    mismas.add(new Candidato(otro, 1, 0, stock.getOrDefault(otro.getId(), 0L), List.of()));
                 }
             }
         }
@@ -209,8 +209,9 @@ public class AsistenteService {
     private RespuestaAsistente opciones(String pregunta, List<Candidato> candidatos) {
         List<Sugerencia> sugerencias = diversificar(ordenar(candidatos));
         return respuesta(
-            "Para «" + pregunta + "» encontré " + sugerencias.size() + " opción(es) en el catálogo, "
-                + conStock(sugerencias) + ". Se muestran productos con distinto principio activo para que pueda ofrecer variedad.",
+            "Para «" + pregunta + "» pueden servir " + sugerencias.size() + " opción(es) del inventario, "
+                + conStock(sugerencias) + ". Son sugerencias con distinto principio activo: confirme con el paciente "
+                + "(alergias, embarazo, otros medicamentos) antes de entregar.",
             sugerencias
         );
     }
@@ -226,7 +227,7 @@ public class AsistenteService {
 
     // ---------- puntuacion y orden ----------
 
-    private record Candidato(Producto producto, int puntaje, int puntajeNombre, long stock) {
+    private record Candidato(Producto producto, int puntaje, int puntajeNombre, long stock, List<String> cubre) {
     }
 
     private Candidato puntuar(Producto producto, Consulta consulta, long stock) {
@@ -257,7 +258,15 @@ public class AsistenteService {
                 total += 1;
             }
         }
-        return new Candidato(producto, total + nombre, nombre, stock);
+        List<String> cubre = new ArrayList<>();
+        for (String palabra : consulta.directos()) {
+            Set<String> relacionados = new LinkedHashSet<>(consulta.expansiones().getOrDefault(palabra, Set.of()));
+            relacionados.add(palabra);
+            if (relacionados.stream().anyMatch(t -> nombres.contains(t) || clinico.contains(t) || categoria.contains(t))) {
+                cubre.add(palabra);
+            }
+        }
+        return new Candidato(producto, total + nombre, nombre, stock, cubre);
     }
 
     /** Primero los que tienen stock y mejor puntaje; a igualdad, el mas barato. */
@@ -298,13 +307,17 @@ public class AsistenteService {
             p.getPresentacion(), p.getLaboratorio().getNombre(), p.getCategoria().getNombre(), p.getPrecioVenta(),
             c.stock(), Boolean.TRUE.equals(p.getRequiereReceta()), p.getIndicacionesOficiales(),
             p.getContraindicaciones(), p.getAdvertencias(), p.getPrecauciones(), p.getViaAdministracion(),
-            p.getCondicionesAlmacenamiento(), p.getFuenteInformacion(), p.getFechaActualizacionInformacion(), c.puntaje()
+            p.getCondicionesAlmacenamiento(), p.getFuenteInformacion(), p.getFechaActualizacionInformacion(), c.puntaje(),
+            c.cubre()
         );
     }
 
     // ---------- interpretacion de la consulta ----------
 
-    private record Consulta(Set<String> directos, Set<String> expandidos, boolean pideAlternativas, boolean pideFicha) {
+    private record Consulta(
+        Set<String> directos, Set<String> expandidos, Map<String, Set<String>> expansiones,
+        boolean pideAlternativas, boolean pideFicha
+    ) {
 
         static Consulta de(String texto) {
             List<String> palabras = java.util.Arrays.stream(normalizar(texto).split("[^a-z0-9]+"))
@@ -314,6 +327,7 @@ public class AsistenteService {
             boolean ficha = palabras.stream().anyMatch(PALABRAS_FICHA::contains);
             Set<String> directos = new LinkedHashSet<>();
             Set<String> expandidos = new LinkedHashSet<>();
+            Map<String, Set<String>> expansiones = new java.util.LinkedHashMap<>();
             for (String palabra : palabras) {
                 if (palabra.length() < 3 || PALABRAS_VACIAS.contains(palabra) || PALABRAS_ALTERNATIVA.contains(palabra)
                     || PALABRAS_FICHA.contains(palabra)) {
@@ -321,9 +335,10 @@ public class AsistenteService {
                 }
                 directos.add(palabra);
                 expandidos.addAll(SINONIMOS.getOrDefault(palabra, List.of()));
+                expansiones.put(palabra, new LinkedHashSet<>(SINONIMOS.getOrDefault(palabra, List.of())));
             }
             expandidos.removeAll(directos);
-            return new Consulta(directos, expandidos, alternativas, ficha);
+            return new Consulta(directos, expandidos, expansiones, alternativas, ficha);
         }
     }
 

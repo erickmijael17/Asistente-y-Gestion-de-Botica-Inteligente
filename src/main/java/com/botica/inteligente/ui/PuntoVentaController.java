@@ -1,6 +1,8 @@
 package com.botica.inteligente.ui;
 
 import atlantafx.base.theme.Styles;
+import com.botica.inteligente.asistente.service.AsistenteService;
+import com.botica.inteligente.asistente.service.Sugerencia;
 import com.botica.inteligente.inventario.service.InventarioService;
 import com.botica.inteligente.producto.service.ProductoFiltro;
 import com.botica.inteligente.producto.service.ProductoResumen;
@@ -36,10 +38,14 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TitledPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 import javafx.util.converter.IntegerStringConverter;
@@ -57,6 +63,7 @@ public class PuntoVentaController implements Refrescable {
     private final VentaService ventaService;
     private final ProductoService productoService;
     private final InventarioService inventarioService;
+    private final AsistenteService asistenteService;
     private final ComprobantePdfService pdfService;
     private final Notificador notificador;
     private final BigDecimal tasaIgv;
@@ -79,6 +86,7 @@ public class PuntoVentaController implements Refrescable {
     private final Label total = new Label();
     private final Label error = new Label();
     private final Button cobrar = new Button("Cobrar");
+    private PanelAsistente panelAsistente;
 
     /** Linea del carrito: producto, cantidad editable y stock vendible al momento de agregarlo. */
     private static final class Linea {
@@ -104,6 +112,7 @@ public class PuntoVentaController implements Refrescable {
         VentaService ventaService,
         ProductoService productoService,
         InventarioService inventarioService,
+        AsistenteService asistenteService,
         ComprobantePdfService pdfService,
         Notificador notificador,
         @Value("${botica.igv.tasa:0.18}") BigDecimal tasaIgv
@@ -111,6 +120,7 @@ public class PuntoVentaController implements Refrescable {
         this.ventaService = ventaService;
         this.productoService = productoService;
         this.inventarioService = inventarioService;
+        this.asistenteService = asistenteService;
         this.pdfService = pdfService;
         this.notificador = notificador;
         this.tasaIgv = tasaIgv;
@@ -141,12 +151,19 @@ public class PuntoVentaController implements Refrescable {
         entrada.setAlignment(Pos.CENTER_LEFT);
 
         configurarTabla();
-        VBox izquierda = new VBox(12, entrada, tabla);
+        VBox izquierda = new VBox(12, entrada, tabla, construirPanelCobro());
         VBox.setVgrow(tabla, Priority.ALWAYS);
         HBox.setHgrow(izquierda, Priority.ALWAYS);
 
-        raiz.getChildren().setAll(new HBox(18, izquierda, construirPanelCobro()));
-        VBox.setVgrow(raiz.getChildren().get(0), Priority.ALWAYS);
+        panelAsistente = new PanelAsistente(asistenteService, this::agregarSugerencia, true);
+        panelAsistente.setPrefWidth(330);
+        panelAsistente.setMinWidth(330);
+        panelAsistente.setMaxWidth(330);
+        panelAsistente.getStyleClass().add("panel-asistente");
+
+        HBox contenido = new HBox(16, izquierda, panelAsistente);
+        raiz.getChildren().setAll(contenido);
+        VBox.setVgrow(contenido, Priority.ALWAYS);
         carrito.addListener((javafx.collections.ListChangeListener<Linea>) cambio -> recalcular());
         aplicaIgv.selectedProperty().addListener((obs, a, n) -> recalcular());
         incluyeIgv.selectedProperty().addListener((obs, a, n) -> recalcular());
@@ -155,7 +172,17 @@ public class PuntoVentaController implements Refrescable {
 
     @Override
     public void refrescar() {
+        panelAsistente.saludar();
         escaner.requestFocus();
+    }
+
+    /** Una sugerencia del asistente (ya validada por el farmaceutico) pasa al carrito. */
+    private void agregarSugerencia(Sugerencia sugerencia) {
+        Fondo.ejecutar(
+            () -> productoService.obtener(sugerencia.productoId()),
+            this::agregarProducto,
+            falla -> avisar(DialogoFormulario.textoError(falla))
+        );
     }
 
     // ---------- carrito ----------
@@ -164,12 +191,12 @@ public class PuntoVentaController implements Refrescable {
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         tabla.setPlaceholder(new Label("El carrito está vacío"));
         tabla.setEditable(true);
-        texto("Producto", 260, l -> l.producto.datos().codigoInterno() + " · " + l.producto.datos().nombreComercial());
-        texto("Stock", 60, l -> String.valueOf(l.stock));
-        texto("Precio", 80, l -> dinero(l.precio()));
+        texto("Producto", 210, l -> l.producto.datos().codigoInterno() + " · " + l.producto.datos().nombreComercial());
+        texto("Stock", 55, l -> String.valueOf(l.stock));
+        texto("Precio", 70, l -> dinero(l.precio()));
 
         TableColumn<Linea, Integer> cantidad = new TableColumn<>("Cant.");
-        cantidad.setPrefWidth(70);
+        cantidad.setPrefWidth(55);
         cantidad.setEditable(true);
         cantidad.setCellValueFactory(c -> c.getValue().cantidad.asObject());
         cantidad.setCellFactory(c -> new TextFieldTableCell<>(new IntegerStringConverter() {
@@ -196,16 +223,17 @@ public class PuntoVentaController implements Refrescable {
             recalcular();
         });
         tabla.getColumns().add(cantidad);
-        texto("Importe", 90, l -> dinero(l.importe()));
+        texto("Importe", 80, l -> dinero(l.importe()));
 
         TableColumn<Linea, Linea> quitar = new TableColumn<>("");
-        quitar.setPrefWidth(50);
+        quitar.setPrefWidth(46);
         quitar.setSortable(false);
         quitar.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue()));
         quitar.setCellFactory(c -> new TableCell<>() {
             private final Button boton = new Button("✕");
 
             {
+                boton.setMinWidth(Region.USE_PREF_SIZE);
                 boton.setOnAction(evento -> carrito.remove(getItem()));
             }
 
@@ -302,21 +330,42 @@ public class PuntoVentaController implements Refrescable {
         for (Label etiqueta : List.of(base, igv)) {
             etiqueta.getStyleClass().add("muted-text");
         }
-        total.getStyleClass().addAll(Styles.TITLE_2);
+        total.getStyleClass().addAll(Styles.TITLE_3);
+        total.setMinWidth(Region.USE_PREF_SIZE);
+        base.setMinWidth(Region.USE_PREF_SIZE);
+        igv.setMinWidth(Region.USE_PREF_SIZE);
         error.getStyleClass().add(Styles.DANGER);
         error.setWrapText(true);
         cobrar.getStyleClass().add(Styles.ACCENT);
-        cobrar.setMaxWidth(Double.MAX_VALUE);
+        cobrar.setMinWidth(110);
+        cobrar.setPrefHeight(38);
         cobrar.setOnAction(evento -> cobrar());
 
-        VBox panel = new VBox(
-            10, new Label("Comprobante"), tipo, clienteNombre, clienteDocumento, aplicaIgv, incluyeIgv,
-            observacion, new Label("Resumen"), base, igv, total, error, cobrar
-        );
-        panel.setPrefWidth(300);
-        panel.setMinWidth(300);
-        panel.setPadding(new Insets(0, 0, 0, 4));
-        return panel;
+        GridPane datos = new GridPane();
+        datos.setHgap(10);
+        datos.setVgap(8);
+        for (int i = 0; i < 2; i++) {
+            ColumnConstraints columna = new ColumnConstraints();
+            columna.setPercentWidth(50);
+            datos.getColumnConstraints().add(columna);
+        }
+        for (javafx.scene.Node campo : List.of(tipo, clienteNombre, clienteDocumento, observacion)) {
+            ((javafx.scene.layout.Region) campo).setMaxWidth(Double.MAX_VALUE);
+        }
+        datos.add(tipo, 0, 0);
+        datos.add(clienteNombre, 1, 0);
+        datos.add(clienteDocumento, 0, 1);
+        datos.add(observacion, 1, 1);
+        datos.add(aplicaIgv, 0, 2);
+        datos.add(incluyeIgv, 1, 2);
+        TitledPane comprobante = new TitledPane("Comprobante y cliente (opcional)", datos);
+        comprobante.setExpanded(false);
+
+        Region espacio = new Region();
+        HBox.setHgrow(espacio, Priority.ALWAYS);
+        HBox resumen = new HBox(16, new VBox(2, base, igv), espacio, total, cobrar);
+        resumen.setAlignment(Pos.CENTER_LEFT);
+        return new VBox(8, comprobante, error, resumen);
     }
 
     private void recalcular() {
