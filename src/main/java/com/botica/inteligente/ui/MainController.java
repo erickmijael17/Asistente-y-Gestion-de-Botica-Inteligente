@@ -15,6 +15,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
@@ -45,6 +46,9 @@ public class MainController {
     @FXML
     private Button usuariosButton;
 
+    @FXML
+    private VBox barraLateral;
+
     public MainController(
         ApplicationContext applicationContext,
         Notificador notificador,
@@ -57,13 +61,20 @@ public class MainController {
 
     @FXML
     private void initialize() {
+        String hoja = Application.getUserAgentStylesheet();
+        temaOscuro = hoja != null && hoja.toLowerCase().contains("dark");
+        areaContenido.sceneProperty().addListener((obs, anterior, escena) -> {
+            if (escena != null) {
+                aplicarClaseDeTema(escena.getRoot());
+            }
+        });
         sesionActual.usuarioAutenticado().ifPresentOrElse(
             usuario -> usuarioActual.setText(usuario.nombreVisible() + " · " + usuario.rol()),
             () -> usuarioActual.setText("Sesión no disponible")
         );
         usuariosButton.setVisible(sesionActual.esOwner());
         usuariosButton.setManaged(sesionActual.esOwner());
-        mostrarVista("Dashboard", "/view/dashboard-view.fxml");
+        mostrarVista("Inicio", "/view/dashboard-view.fxml");
     }
 
     public void setAlCerrarSesion(Runnable accionCerrarSesion) {
@@ -72,7 +83,7 @@ public class MainController {
 
     @FXML
     private void mostrarDashboard() {
-        mostrarVista("Dashboard", "/view/dashboard-view.fxml");
+        mostrarVista("Inicio", "/view/dashboard-view.fxml");
     }
 
     @FXML
@@ -87,7 +98,7 @@ public class MainController {
 
     @FXML
     private void mostrarCategorias() {
-        mostrarVista("Categorias", "/view/categorias-view.fxml");
+        mostrarVista("Categorías", "/view/categorias-view.fxml");
     }
 
     @FXML
@@ -140,6 +151,9 @@ public class MainController {
             ? new PrimerDark().getUserAgentStylesheet()
             : new PrimerLight().getUserAgentStylesheet();
         Application.setUserAgentStylesheet(hojaDeEstilo);
+        if (areaContenido.getScene() != null) {
+            aplicarClaseDeTema(areaContenido.getScene().getRoot());
+        }
 
         Window ventana = areaContenido.getScene() == null
             ? null
@@ -165,6 +179,8 @@ public class MainController {
 
             areaContenido.getChildren().setAll(vista.raiz());
             tituloVista.setText(titulo);
+            marcarActivo(ruta);
+            Animaciones.entrada(vista.raiz());
             if (vista.controlador() instanceof Refrescable refrescable) {
                 refrescable.refrescar();
             }
@@ -174,6 +190,25 @@ public class MainController {
                 areaContenido.getScene() == null ? null : areaContenido.getScene().getWindow(),
                 "No se pudo abrir la vista solicitada"
             );
+        }
+    }
+
+    /** Resalta en el menu la seccion que se esta mostrando. */
+    private void marcarActivo(String ruta) {
+        for (javafx.scene.Node nodo : barraLateral.getChildren()) {
+            if (nodo instanceof Button boton && boton.getUserData() != null) {
+                boton.getStyleClass().remove("activo");
+                if (ruta.equals(boton.getUserData())) {
+                    boton.getStyleClass().add("activo");
+                }
+            }
+        }
+    }
+
+    private void aplicarClaseDeTema(Parent raiz) {
+        raiz.getStyleClass().remove("oscuro");
+        if (temaOscuro) {
+            raiz.getStyleClass().add("oscuro");
         }
     }
 

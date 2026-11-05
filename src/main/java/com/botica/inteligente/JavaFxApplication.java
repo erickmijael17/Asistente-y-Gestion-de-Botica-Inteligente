@@ -116,6 +116,7 @@ public class JavaFxApplication extends Application {
             configurarController.accept(loader.getController());
 
             Scene scene = new Scene(raiz, ancho, alto);
+            com.botica.inteligente.ui.Animaciones.entrada(raiz.lookup(".auth-card"));
             scene.getStylesheets().add(
                 JavaFxApplication.class.getResource("/css/app.css").toExternalForm()
             );

@@ -105,8 +105,6 @@ public class ComprasController implements Refrescable {
 
     @FXML
     public void initialize() {
-        Label encabezado = new Label("Compras");
-        encabezado.getStyleClass().add("section-title");
         mensaje.getStyleClass().add("muted-text");
 
         buscador.setPromptText("Buscar por código, documento o proveedor…");
@@ -142,9 +140,10 @@ public class ComprasController implements Refrescable {
         agregar(tabla, "Total", 90, c -> "S/ " + c.total());
         agregar(tabla, "Estado", 90, c -> c.estado() == EstadoCompra.REGISTRADA ? "Registrada" : "Anulada");
         tabla.getColumns().add(columnaAcciones());
+        Tablas.aplicarIndicadores(tabla, "Estado");
         VBox.setVgrow(tabla, Priority.ALWAYS);
 
-        raiz.getChildren().setAll(encabezado, barra, mensaje, tabla, paginador);
+        raiz.getChildren().setAll(barra, mensaje, tabla, paginador);
     }
 
     @Override

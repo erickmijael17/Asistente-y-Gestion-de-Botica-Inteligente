@@ -18,6 +18,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.Region;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -70,21 +71,22 @@ public class ProductosController extends CatalogoController<ProductoResumen, Pro
         filtroCategoria.valueProperty().addListener((obs, anterior, nuevo) -> reiniciar());
         filtroLaboratorio.valueProperty().addListener((obs, anterior, nuevo) -> reiniciar());
         filtroTipo.valueProperty().addListener((obs, anterior, nuevo) -> reiniciar());
-        filtroCategoria.setPrefWidth(160);
-        filtroLaboratorio.setPrefWidth(160);
+        filtroCategoria.setPrefWidth(135);
+        filtroLaboratorio.setPrefWidth(135);
+        filtroTipo.setPrefWidth(110);
+        filtroTipo.setMinWidth(Region.USE_PREF_SIZE);
         return List.of(filtroCategoria, filtroLaboratorio, filtroTipo);
     }
 
     @Override
     protected void configurarColumnas() {
-        columna("Código", 90, p -> p.datos().codigoInterno());
-        columna("Producto", 220, p -> p.datos().nombreComercial());
-        columna("Categoría", 130, ProductoResumen::categoriaNombre);
-        columna("Laboratorio", 140, ProductoResumen::laboratorioNombre);
-        columna("Tipo", 100, p -> p.datos().tipoProducto().name());
-        columna("P. venta", 85, p -> "S/ " + p.datos().precioVenta().toPlainString());
-        columna("Cód. barras", 120, p -> p.datos().codigoBarras() == null ? "" : p.datos().codigoBarras());
-        columna("Estado", 80, p -> p.estado() ? "Activo" : "Inactivo");
+        columna("Código", 80, p -> p.datos().codigoInterno());
+        columna("Producto", 190, p -> p.datos().nombreComercial());
+        columna("Categoría", 110, ProductoResumen::categoriaNombre);
+        columna("Laboratorio", 120, ProductoResumen::laboratorioNombre);
+        columna("P. venta", 80, p -> "S/ " + p.datos().precioVenta().setScale(2, java.math.RoundingMode.HALF_UP).toPlainString());
+        columna("Cód. barras", 115, p -> p.datos().codigoBarras() == null ? "" : p.datos().codigoBarras());
+        columna("Estado", 75, p -> p.estado() ? "Activo" : "Inactivo");
     }
 
     @Override

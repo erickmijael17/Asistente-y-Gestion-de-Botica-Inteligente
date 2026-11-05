@@ -74,8 +74,6 @@ public class VentasController implements Refrescable {
 
     @FXML
     public void initialize() {
-        Label encabezado = new Label("Historial de ventas");
-        encabezado.getStyleClass().add("section-title");
         hoy.getStyleClass().add("muted-text");
         mensaje.getStyleClass().add("muted-text");
 
@@ -106,9 +104,10 @@ public class VentasController implements Refrescable {
         agregar(tabla, "Total", 90, v -> "S/ " + v.total());
         agregar(tabla, "Estado", 90, v -> v.estado() == EstadoVenta.EMITIDA ? "Emitida" : "Anulada");
         tabla.getColumns().add(columnaAcciones());
+        Tablas.aplicarIndicadores(tabla, "Estado");
         VBox.setVgrow(tabla, Priority.ALWAYS);
 
-        raiz.getChildren().setAll(encabezado, hoy, barra, mensaje, tabla, paginador);
+        raiz.getChildren().setAll(hoy, barra, mensaje, tabla, paginador);
     }
 
     @Override

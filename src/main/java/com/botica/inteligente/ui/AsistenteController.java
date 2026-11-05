@@ -53,8 +53,6 @@ public class AsistenteController implements Refrescable {
 
     @FXML
     public void initialize() {
-        Label encabezado = new Label("Asistente de medicamentos");
-        encabezado.getStyleClass().add("section-title");
         Label aviso = new Label(RespuestaAsistente.AVISO_ORIENTATIVO);
         aviso.getStyleClass().add("muted-text");
         aviso.setWrapText(true);
@@ -79,7 +77,7 @@ public class AsistenteController implements Refrescable {
         HBox barra = new HBox(10, entrada, enviar);
         barra.setAlignment(Pos.CENTER_LEFT);
 
-        raiz.getChildren().setAll(encabezado, aviso, ejemplos, desplazamiento, barra);
+        raiz.getChildren().setAll(aviso, ejemplos, desplazamiento, barra);
     }
 
     @Override
@@ -128,6 +126,7 @@ public class AsistenteController implements Refrescable {
                 tarjetas.getChildren().add(tarjeta(sugerencia));
             }
             conversacion.getChildren().add(tarjetas);
+            Animaciones.escalonada(tarjetas.getChildren());
         }
         desplazarAlFinal();
     }
@@ -160,6 +159,7 @@ public class AsistenteController implements Refrescable {
         tarjeta.getChildren().add(ficha);
         tarjeta.getStyleClass().add("kpi-card");
         tarjeta.setPadding(new Insets(12, 14, 12, 14));
+        Animaciones.elevarAlPasar(tarjeta);
         tarjeta.setPrefWidth(250);
         tarjeta.setMaxWidth(250);
         return tarjeta;
@@ -203,7 +203,9 @@ public class AsistenteController implements Refrescable {
     }
 
     private void agregarBurbuja(String texto, boolean usuario) {
-        conversacion.getChildren().add(fila(burbuja(texto, usuario), usuario));
+        HBox nueva = fila(burbuja(texto, usuario), usuario);
+        conversacion.getChildren().add(nueva);
+        Animaciones.entrada(nueva);
         desplazarAlFinal();
     }
 

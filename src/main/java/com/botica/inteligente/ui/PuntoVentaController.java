@@ -125,9 +125,6 @@ public class PuntoVentaController implements Refrescable {
 
     @FXML
     public void initialize() {
-        Label encabezado = new Label("Punto de venta");
-        encabezado.getStyleClass().add("section-title");
-
         escaner.setPromptText("Escanee el código de barras y presione Enter");
         escaner.setOnAction(evento -> escanear());
         buscador.setPromptText("…o busque un producto por nombre o código");
@@ -148,8 +145,8 @@ public class PuntoVentaController implements Refrescable {
         VBox.setVgrow(tabla, Priority.ALWAYS);
         HBox.setHgrow(izquierda, Priority.ALWAYS);
 
-        raiz.getChildren().setAll(encabezado, new HBox(18, izquierda, construirPanelCobro()));
-        VBox.setVgrow(raiz.getChildren().get(1), Priority.ALWAYS);
+        raiz.getChildren().setAll(new HBox(18, izquierda, construirPanelCobro()));
+        VBox.setVgrow(raiz.getChildren().get(0), Priority.ALWAYS);
         carrito.addListener((javafx.collections.ListChangeListener<Linea>) cambio -> recalcular());
         aplicaIgv.selectedProperty().addListener((obs, a, n) -> recalcular());
         incluyeIgv.selectedProperty().addListener((obs, a, n) -> recalcular());

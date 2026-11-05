@@ -12,7 +12,6 @@
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.botica.inteligente.ui.UsuariosController" spacing="16" styleClass="placeholder-view">
     <padding><Insets top="24" right="28" bottom="24" left="28" /></padding>
-    <Label text="Usuarios" styleClass="section-title" />
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="usernameField" promptText="Nombre de usuario" HBox.hgrow="ALWAYS" />
         <PasswordField fx:id="passwordField" promptText="Contraseña (mín. 8)" />

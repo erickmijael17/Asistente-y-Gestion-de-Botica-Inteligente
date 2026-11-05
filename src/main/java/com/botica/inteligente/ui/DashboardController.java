@@ -24,6 +24,7 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.HBox;
@@ -70,14 +71,24 @@ public class DashboardController implements Refrescable {
 
     @FXML
     public void initialize() {
-        Label encabezado = new Label("Inicio");
-        encabezado.getStyleClass().add("section-title");
         mensaje.getStyleClass().add("muted-text");
-        raiz.getChildren().add(encabezado);
+        VBox contenido = new VBox(16);
         if (sesionActual.esOwner()) {
-            raiz.getChildren().addAll(construirIndicadores());
+            contenido.getChildren().add(construirIndicadores());
         }
-        raiz.getChildren().addAll(mensaje, construirAlertas());
+        contenido.getChildren().addAll(mensaje, construirAlertas());
+        ScrollPane marco = new ScrollPane(contenido);
+        marco.setFitToWidth(true);
+        marco.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        marco.getStyleClass().add("marco-transparente");
+        VBox.setVgrow(marco, Priority.ALWAYS);
+        raiz.getChildren().setAll(marco);
+    }
+
+    private Label subtitulo(String texto) {
+        Label etiqueta = new Label(texto);
+        etiqueta.getStyleClass().add("subtitulo");
+        return etiqueta;
     }
 
     @Override
@@ -113,14 +124,14 @@ public class DashboardController implements Refrescable {
         variacion.getStyleClass().add("muted-text");
         HBox tarjetas = new HBox(
             14,
-            tarjeta("Ventas del período", ventas, variacion),
-            tarjeta("N.º de ventas", cantidad, null),
-            tarjeta("Ticket promedio", ticket, null),
-            tarjeta("Utilidad bruta", utilidad, null)
+            tarjeta("Ventas del período", ventas, variacion, "kpi-verde"),
+            tarjeta("N.º de ventas", cantidad, null, "kpi-azul"),
+            tarjeta("Ticket promedio", ticket, null, "kpi-violeta"),
+            tarjeta("Utilidad bruta", utilidad, null, "kpi-ambar")
         );
 
         grafico.setLegendVisible(false);
-        grafico.setAnimated(false);
+        grafico.setAnimated(true);
         grafico.setCategoryGap(6);
         grafico.setPrefHeight(240);
         grafico.setMinHeight(200);
@@ -132,16 +143,18 @@ public class DashboardController implements Refrescable {
         masVendidos.setPlaceholder(new Label("Sin ventas en el período"));
         masVendidos.setPrefHeight(240);
         masVendidos.setMinHeight(160);
-        VBox listado = new VBox(6, new Label("Productos más vendidos"), masVendidos);
+        ejeX.setTickLabelRotation(-30);
+        VBox listado = new VBox(6, subtitulo("Productos más vendidos"), masVendidos);
         listado.setPrefWidth(520);
-        HBox medio = new HBox(14, new VBox(6, new Label("Ventas por período"), grafico), listado);
+        HBox medio = new HBox(14, new VBox(6, subtitulo("Ventas por período"), grafico), listado);
         HBox.setHgrow(medio.getChildren().get(0), Priority.ALWAYS);
         VBox.setVgrow(grafico, Priority.ALWAYS);
 
+        Animaciones.escalonada(tarjetas.getChildren());
         return new VBox(14, barra, tarjetas, medio);
     }
 
-    private VBox tarjeta(String titulo, Label valor, Label detalle) {
+    private VBox tarjeta(String titulo, Label valor, Label detalle, String color) {
         Label etiqueta = new Label(titulo);
         etiqueta.getStyleClass().add("muted-text");
         valor.getStyleClass().add(Styles.TITLE_2);
@@ -149,9 +162,11 @@ public class DashboardController implements Refrescable {
         if (detalle != null) {
             tarjeta.getChildren().add(detalle);
         }
-        tarjeta.getStyleClass().add("kpi-card");
+        tarjeta.getStyleClass().addAll("kpi-card", color);
         tarjeta.setPadding(new Insets(14, 18, 14, 18));
+        Animaciones.elevarAlPasar(tarjeta);
         HBox.setHgrow(tarjeta, Priority.ALWAYS);
+        tarjeta.setPrefWidth(0);
         tarjeta.setMaxWidth(Double.MAX_VALUE);
         return tarjeta;
     }
@@ -172,7 +187,7 @@ public class DashboardController implements Refrescable {
         ticket.setText(dinero(r.ticketPromedio()));
         utilidad.setText(dinero(r.utilidadBruta()));
         if (r.variacionPorcentual() == null) {
-            variacion.setText("Sin datos del período anterior");
+            variacion.setText("Sin período previo");
         } else {
             String flecha = r.variacionPorcentual().signum() >= 0 ? "▲ " : "▼ ";
             variacion.setText(flecha + r.variacionPorcentual().abs() + " % vs período anterior");
@@ -203,6 +218,8 @@ public class DashboardController implements Refrescable {
         agregar(tablaVencimientos, "Vence", 90, l -> FECHA.format(l.fechaVencimiento()));
         agregar(tablaVencimientos, "Cant.", 60, l -> String.valueOf(l.cantidadActual()));
         agregar(tablaVencimientos, "Estado", 80, l -> l.vencido() ? "Vencido" : "Por vencer");
+        Tablas.aplicarIndicadores(tablaStock, "Estado");
+        Tablas.aplicarIndicadores(tablaVencimientos, "Estado");
         tablaStock.setPrefHeight(200);
         tablaVencimientos.setPrefHeight(200);
 
@@ -210,7 +227,7 @@ public class DashboardController implements Refrescable {
         VBox vencimientos = new VBox(6, alertaVencimiento, tablaVencimientos);
         HBox.setHgrow(stock, Priority.ALWAYS);
         HBox.setHgrow(vencimientos, Priority.ALWAYS);
-        VBox seccion = new VBox(8, new Label("Alertas de inventario"), new HBox(14, stock, vencimientos));
+        VBox seccion = new VBox(8, subtitulo("Alertas de inventario"), new HBox(14, stock, vencimientos));
         VBox.setVgrow(seccion, Priority.SOMETIMES);
         return seccion;
     }

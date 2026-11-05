@@ -75,8 +75,6 @@ public class InventarioController implements Refrescable {
 
     @FXML
     public void initialize() {
-        Label encabezado = new Label("Inventario");
-        encabezado.getStyleClass().add("section-title");
         resumenLabel.getStyleClass().add("muted-text");
         mensaje.getStyleClass().add("muted-text");
 
@@ -86,7 +84,7 @@ public class InventarioController implements Refrescable {
         vencimientos.setClosable(false);
         TabPane pestanas = new TabPane(existencias, vencimientos);
         VBox.setVgrow(pestanas, Priority.ALWAYS);
-        raiz.getChildren().setAll(encabezado, resumenLabel, mensaje, pestanas);
+        raiz.getChildren().setAll(resumenLabel, mensaje, pestanas);
     }
 
     @Override
@@ -141,6 +139,7 @@ public class InventarioController implements Refrescable {
             }
         });
         tabla.getColumns().add(acciones);
+        Tablas.aplicarIndicadores(tabla, "Estado");
         VBox.setVgrow(tabla, Priority.ALWAYS);
         VBox caja = new VBox(12, barra, tabla, paginador);
         caja.setPadding(new Insets(12, 0, 0, 0));
@@ -213,6 +212,7 @@ public class InventarioController implements Refrescable {
         agregar(lotes, "Vencimiento", 110, l -> l.fechaVencimiento() == null ? "—" : FECHA.format(l.fechaVencimiento()));
         agregar(lotes, "Cantidad", 80, l -> String.valueOf(l.cantidadActual()));
         agregar(lotes, "Estado", 100, l -> l.vencido() ? "Vencido" : "Vigente");
+        Tablas.aplicarIndicadores(lotes, "Estado");
         lotes.getItems().setAll(detalle.lotes());
 
         TableView<KardexFila> kardex = new TableView<>();
@@ -276,6 +276,7 @@ public class InventarioController implements Refrescable {
             });
             tablaVencimientos.getColumns().add(baja);
         }
+        Tablas.aplicarIndicadores(tablaVencimientos, "Estado");
         VBox.setVgrow(tablaVencimientos, Priority.ALWAYS);
         VBox caja = new VBox(12, barra, tablaVencimientos);
         caja.setPadding(new Insets(12, 0, 0, 0));

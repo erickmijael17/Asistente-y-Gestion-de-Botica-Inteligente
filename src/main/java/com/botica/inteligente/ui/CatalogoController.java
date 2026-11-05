@@ -93,17 +93,17 @@ public abstract class CatalogoController<R, F> implements Refrescable {
     @FXML
     public void initialize() {
         boolean owner = sesionActual.esOwner();
-        Label encabezado = new Label(titulo());
-        encabezado.getStyleClass().add("section-title");
+        raiz.setAccessibleText(titulo());
 
         buscador.setPromptText("Buscar…");
-        buscador.setPrefWidth(260);
+        buscador.setPrefWidth(220);
         buscador.textProperty().addListener((obs, anterior, nuevo) -> {
             esperaBusqueda.setOnFinished(evento -> cargar(0));
             esperaBusqueda.playFromStart();
         });
         filtroEstado.getItems().setAll("Todos", "Activos", "Inactivos");
         filtroEstado.setValue("Activos");
+        filtroEstado.setMinWidth(Region.USE_PREF_SIZE);
         filtroEstado.valueProperty().addListener((obs, anterior, nuevo) -> cargar(0));
 
         Region espacio = new Region();
@@ -114,6 +114,7 @@ public abstract class CatalogoController<R, F> implements Refrescable {
         barraFiltros.getChildren().add(espacio);
         if (owner) {
             Button nuevo = new Button(textoBotonNuevo());
+            nuevo.setMinWidth(Region.USE_PREF_SIZE);
             nuevo.getStyleClass().add(Styles.ACCENT);
             nuevo.setOnAction(evento -> abrirFormulario(null));
             barraFiltros.getChildren().add(nuevo);
@@ -122,13 +123,14 @@ public abstract class CatalogoController<R, F> implements Refrescable {
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         tabla.setPlaceholder(new Label("Sin resultados"));
         configurarColumnas();
+        Tablas.aplicarIndicadores(tabla, "Estado");
         if (owner) {
             tabla.getColumns().add(columnaAcciones());
         }
         VBox.setVgrow(tabla, Priority.ALWAYS);
         mensaje.getStyleClass().add("muted-text");
 
-        raiz.getChildren().setAll(encabezado, barraFiltros, mensaje, tabla, paginador);
+        raiz.getChildren().setAll(barraFiltros, mensaje, tabla, paginador);
     }
 
     @Override
