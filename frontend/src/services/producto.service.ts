@@ -16,4 +16,12 @@ export const productoService = {
     });
     return response.data.data;
   },
+  crear: async (data: Record<string, unknown>): Promise<ProductoResumen> => {
+    const response = await api.post<ApiResponse<ProductoResumen>>('/v1/productos', data);
+    return response.data.data;
+  },
+  actualizar: async (id: number, data: Record<string, unknown>): Promise<ProductoResumen> => {
+    const response = await api.put<ApiResponse<ProductoResumen>>(`/v1/productos/${id}`, data);
+    return response.data.data;
+  },
 };

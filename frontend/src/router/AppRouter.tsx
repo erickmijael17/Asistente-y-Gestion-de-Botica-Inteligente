@@ -31,7 +31,7 @@ function GerenteRoute({ children }: { children: React.ReactNode }) {
 }
 
 function DashboardLayout() {
-  const { errorDatos, productos, categorias, laboratorios, ventas, cargandoDatos, recargarVentas } = useCatalogo();
+  const { errorDatos, productos, categorias, laboratorios, ventas, cargandoDatos, recargarVentas, cargarDatos } = useCatalogo();
   const { esGerente } = useAuth();
 
   return (
@@ -66,6 +66,7 @@ function DashboardLayout() {
                   laboratorios={laboratorios}
                   cargando={cargandoDatos}
                   esGerente={esGerente}
+                  onRecargar={cargarDatos}
                 />
               }
             />
