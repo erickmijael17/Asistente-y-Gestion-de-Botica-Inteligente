@@ -17,6 +17,7 @@
             </VBox>
             <Separator />
             <Button text="Dashboard" onAction="#mostrarDashboard" maxWidth="Infinity" styleClass="navigation-button" />
+            <Button text="Asistente" onAction="#mostrarAsistente" maxWidth="Infinity" styleClass="navigation-button" />
             <Button text="Productos" onAction="#mostrarProductos" maxWidth="Infinity" styleClass="navigation-button" />
             <Button text="Categorias" onAction="#mostrarCategorias" maxWidth="Infinity" styleClass="navigation-button" />
             <Button text="Laboratorios" onAction="#mostrarLaboratorios" maxWidth="Infinity" styleClass="navigation-button" />

@@ -95,3 +95,17 @@
     -fx-border-color: -color-border-default;
     -fx-border-radius: 8;
 }
+
+.burbuja-usuario {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: -color-fg-emphasis;
+    -fx-background-radius: 12;
+}
+
+.burbuja-asistente {
+    -fx-background-color: -color-bg-subtle;
+    -fx-text-fill: -color-fg-default;
+    -fx-background-radius: 12;
+    -fx-border-color: -color-border-default;
+    -fx-border-radius: 12;
+}

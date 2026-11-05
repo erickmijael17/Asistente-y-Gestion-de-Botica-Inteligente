@@ -76,6 +76,11 @@ public class MainController {
     }
 
     @FXML
+    private void mostrarAsistente() {
+        mostrarVista("Asistente", "/view/asistente-view.fxml");
+    }
+
+    @FXML
     private void mostrarProductos() {
         mostrarVista("Productos", "/view/productos-view.fxml");
     }

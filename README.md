@@ -35,6 +35,19 @@ mvn clean test
 | 4 | Inventario, lotes, kardex, compras | Hecha |
 | 5 | Ventas / punto de venta | Hecha |
 | 6 | Dashboard y escaneo EAN-13 | Hecha |
-| 7 | Asistente IA | Pendiente |
+| 7 | Asistente de consulta de medicamentos | Hecha |
+
+El asistente busca solo en el catalogo propio (sintoma, nombre o principio activo), sugiere alternativas con stock y precio, y funciona sin internet ni claves externas.
+
+## Configuracion opcional
+
+Se puede sobrescribir en `application.yml` o con variables de entorno:
+
+| Propiedad | Por defecto | Uso |
+|---|---|---|
+| `botica.igv.tasa` | `0.18` | Tasa de IGV en compras y ventas |
+| `botica.serie.boleta` | `B001` | Serie de las boletas |
+| `botica.serie.nota-venta` | `NV01` | Serie de las notas de venta |
+| `botica.empresa.nombre`, `.ruc`, `.direccion`, `.telefono` | `Botica Inteligente` y vacios | Datos del emisor en el comprobante PDF |
 
 Plan completo y reglas de negocio: [MIGRACION.md](MIGRACION.md). El proyecto web anterior esta en la rama `main`.
