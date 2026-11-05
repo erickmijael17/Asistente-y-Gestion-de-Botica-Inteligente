@@ -1,6 +1,7 @@
 package com.botica.inteligente.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.botica.inteligente.categoria.repository.CategoriaRepository;
@@ -122,6 +123,27 @@ class VistasCatalogoTest {
     @Test
     void productosCargaLaTabla() throws Exception {
         assertEquals(1, filasTrasCargar("/view/productos-view.fxml"));
+    }
+
+    @Test
+    void inventarioYComprasCarganSinErrores() throws Exception {
+        for (String ruta : new String[] {"/view/inventario-view.fxml", "/view/compras-view.fxml"}) {
+            CompletableFuture<Object> controlador = new CompletableFuture<>();
+            Platform.runLater(() -> {
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource(ruta));
+                    loader.setControllerFactory(contexto::getBean);
+                    loader.load();
+                    Object c = loader.getController();
+                    ((Refrescable) c).refrescar();
+                    controlador.complete(c);
+                } catch (IOException | RuntimeException error) {
+                    controlador.completeExceptionally(error);
+                }
+            });
+            assertNotNull(controlador.get(10, TimeUnit.SECONDS));
+            Thread.sleep(500);
+        }
     }
 
     private int filasTrasCargar(String ruta) throws Exception {

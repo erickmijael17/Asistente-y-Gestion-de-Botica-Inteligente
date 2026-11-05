@@ -116,6 +116,13 @@ public class Formulario {
         }
     }
 
+    /** Agrega un bloque de ancho completo (por ejemplo, una tabla de lineas). */
+    public void agregarNodo(Node nodo) {
+        siguienteFila();
+        rejilla.add(nodo, 0, fila, columnas, 1);
+        fila++;
+    }
+
     public void limpiarErrores() {
         errores.values().forEach(error -> ocultar(error));
         controles.values().forEach(control -> control.pseudoClassStateChanged(Styles.STATE_DANGER, false));

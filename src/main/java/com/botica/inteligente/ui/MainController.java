@@ -91,6 +91,16 @@ public class MainController {
     }
 
     @FXML
+    private void mostrarInventario() {
+        mostrarVista("Inventario", "/view/inventario-view.fxml");
+    }
+
+    @FXML
+    private void mostrarCompras() {
+        mostrarVista("Compras", "/view/compras-view.fxml");
+    }
+
+    @FXML
     private void mostrarVentas() {
         mostrarVista("Ventas", "/view/ventas-view.fxml");
     }

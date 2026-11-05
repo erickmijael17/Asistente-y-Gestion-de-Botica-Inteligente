@@ -2,7 +2,6 @@ package com.botica.inteligente.ui;
 
 import atlantafx.base.theme.Styles;
 import com.botica.inteligente.security.SesionActual;
-import com.botica.inteligente.shared.exception.CampoInvalidoException;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -11,18 +10,12 @@ import javafx.animation.PauseTransition;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -33,8 +26,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
 import javafx.util.Duration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -49,7 +40,6 @@ import org.springframework.data.domain.Sort;
  */
 public abstract class CatalogoController<R, F> implements Refrescable {
 
-    private static final Logger log = LoggerFactory.getLogger(CatalogoController.class);
     private static final int TAMANO_PAGINA = 15;
 
     protected final SesionActual sesionActual;
@@ -266,69 +256,14 @@ public abstract class CatalogoController<R, F> implements Refrescable {
      * se muestra como aviso.
      */
     protected void mostrarDialogo(String titulo, Formulario formulario, Supplier<Callable<String>> preparador) {
-        Dialog<Void> dialogo = new Dialog<>();
-        dialogo.setTitle(titulo);
-        dialogo.setHeaderText(titulo);
-        dialogo.initOwner(ventana());
-        ScrollPane desplazamiento = new ScrollPane(formulario.nodo());
-        desplazamiento.setFitToWidth(true);
-        desplazamiento.setPrefViewportWidth(680);
-        desplazamiento.setPrefViewportHeight(480);
-        desplazamiento.setPadding(new Insets(4));
-        dialogo.getDialogPane().setContent(desplazamiento);
-        ButtonType guardar = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
-        dialogo.getDialogPane().getButtonTypes().addAll(guardar, ButtonType.CANCEL);
-        Button botonGuardar = (Button) dialogo.getDialogPane().lookupButton(guardar);
-        botonGuardar.addEventFilter(ActionEvent.ACTION, evento -> {
-            evento.consume();
-            guardar(dialogo, botonGuardar, formulario, preparador);
-        });
-        dialogo.show();
-    }
-
-    private void guardar(
-        Dialog<Void> dialogo, Button botonGuardar, Formulario formulario, Supplier<Callable<String>> preparador
-    ) {
-        formulario.limpiarErrores();
-        Callable<String> accion;
-        try {
-            accion = preparador.get();
-        } catch (CampoInvalidoException error) {
-            formulario.mostrarError(error.getCampo(), error.getMessage());
-            return;
-        }
-        botonGuardar.setDisable(true);
-        Task<String> tarea = new Task<>() {
-            @Override
-            protected String call() throws Exception {
-                return accion.call();
-            }
-        };
-        tarea.setOnSucceeded(evento -> {
-            dialogo.setResult(null);
-            dialogo.close();
-            String aviso = tarea.getValue();
+        DialogoFormulario.mostrar(ventana(), titulo, formulario, preparador, aviso -> {
             avisar(aviso == null ? "Guardado correctamente." : aviso);
             recargar();
         });
-        tarea.setOnFailed(evento -> {
-            botonGuardar.setDisable(false);
-            Throwable error = tarea.getException();
-            if (error instanceof CampoInvalidoException campo) {
-                formulario.mostrarError(campo.getCampo(), campo.getMessage());
-            } else {
-                formulario.mostrarError(null, textoError(error));
-            }
-        });
-        iniciar(tarea, "botica-catalogo-guardar");
     }
 
     private String textoError(Throwable error) {
-        if (error instanceof com.botica.inteligente.shared.exception.NegocioException) {
-            return error.getMessage();
-        }
-        log.error("Error inesperado en el catálogo", error);
-        return "No se pudo completar la operación.";
+        return DialogoFormulario.textoError(error);
     }
 
     private void iniciar(Task<?> tarea, String nombre) {

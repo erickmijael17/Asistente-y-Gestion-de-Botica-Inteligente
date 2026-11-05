@@ -20,6 +20,8 @@
             <Button text="Productos" onAction="#mostrarProductos" maxWidth="Infinity" styleClass="navigation-button" />
             <Button text="Categorias" onAction="#mostrarCategorias" maxWidth="Infinity" styleClass="navigation-button" />
             <Button text="Laboratorios" onAction="#mostrarLaboratorios" maxWidth="Infinity" styleClass="navigation-button" />
+            <Button text="Inventario" onAction="#mostrarInventario" maxWidth="Infinity" styleClass="navigation-button" />
+            <Button text="Compras" onAction="#mostrarCompras" maxWidth="Infinity" styleClass="navigation-button" />
             <Button text="Ventas" onAction="#mostrarVentas" maxWidth="Infinity" styleClass="navigation-button" />
             <Button fx:id="usuariosButton" text="Usuarios" onAction="#mostrarUsuarios" maxWidth="Infinity" styleClass="navigation-button" />
             <Region VBox.vgrow="ALWAYS" />
