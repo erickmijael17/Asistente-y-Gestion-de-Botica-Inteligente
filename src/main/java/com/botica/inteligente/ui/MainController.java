@@ -101,6 +101,11 @@ public class MainController {
     }
 
     @FXML
+    private void mostrarPuntoVenta() {
+        mostrarVista("Punto de venta", "/view/punto-venta-view.fxml");
+    }
+
+    @FXML
     private void mostrarVentas() {
         mostrarVista("Ventas", "/view/ventas-view.fxml");
     }
