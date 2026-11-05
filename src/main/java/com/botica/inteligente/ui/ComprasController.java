@@ -1,24 +1,28 @@
 package com.botica.inteligente.ui;
 
 import atlantafx.base.theme.Styles;
+import com.botica.inteligente.categoria.service.CategoriaService;
 import com.botica.inteligente.compra.enums.EstadoCompra;
 import com.botica.inteligente.compra.enums.TipoDocumentoCompra;
 import com.botica.inteligente.compra.service.CompraResumen;
 import com.botica.inteligente.compra.service.CompraService;
 import com.botica.inteligente.compra.service.LineaCompra;
 import com.botica.inteligente.compra.service.NuevaCompra;
+import com.botica.inteligente.laboratorio.service.LaboratorioService;
 import com.botica.inteligente.producto.service.ProductoFiltro;
 import com.botica.inteligente.producto.service.ProductoResumen;
 import com.botica.inteligente.producto.service.ProductoService;
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
 import com.botica.inteligente.shared.util.CalculadoraIgv;
+import com.botica.inteligente.shared.util.Ean13;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javafx.animation.PauseTransition;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -61,6 +65,8 @@ public class ComprasController implements Refrescable {
 
     private final CompraService compraService;
     private final ProductoService productoService;
+    private final CategoriaService categoriaService;
+    private final LaboratorioService laboratorioService;
     private final SesionActual sesionActual;
     private final Notificador notificador;
     private final BigDecimal tasaIgv;
@@ -82,12 +88,16 @@ public class ComprasController implements Refrescable {
     public ComprasController(
         CompraService compraService,
         ProductoService productoService,
+        CategoriaService categoriaService,
+        LaboratorioService laboratorioService,
         SesionActual sesionActual,
         Notificador notificador,
         @Value("${botica.igv.tasa:0.18}") BigDecimal tasaIgv
     ) {
         this.compraService = compraService;
         this.productoService = productoService;
+        this.categoriaService = categoriaService;
+        this.laboratorioService = laboratorioService;
         this.sesionActual = sesionActual;
         this.notificador = notificador;
         this.tasaIgv = tasaIgv;
@@ -347,7 +357,45 @@ public class ComprasController implements Refrescable {
         incluyeIgv.selectedProperty().addListener((obs, a, n) -> recalcular.run());
         Button agregar = new Button("+ Agregar producto");
         agregar.setOnAction(evento -> agregarLinea[0].run());
-        VBox bloque = new VBox(8, filas, new HBox(12, agregar, totales));
+
+        Consumer<ProductoResumen> agregarProducto = producto -> {
+            FilaLinea existente = lineas.stream()
+                .filter(l -> l.producto.getValue() != null && l.producto.getValue().id().equals(producto.id()))
+                .findFirst().orElse(null);
+            if (existente != null) {
+                int actual;
+                try {
+                    Integer escrito = EntradaNumerica.entero("lineas", existente.cantidad.getText());
+                    actual = escrito == null ? 0 : escrito;
+                } catch (CampoInvalidoException cantidadInvalida) {
+                    actual = 0;
+                }
+                existente.cantidad.setText(String.valueOf(actual + 1));
+                return;
+            }
+            FilaLinea destino = lineas.stream()
+                .filter(l -> l.producto.getValue() == null && l.cantidad.getText().isBlank() && l.costo.getText().isBlank())
+                .findFirst().orElse(null);
+            if (destino == null) {
+                agregarLinea[0].run();
+                destino = lineas.get(lineas.size() - 1);
+            }
+            destino.producto.seleccionar(producto);
+            destino.cantidad.setText("1");
+            destino.costo.setText(producto.datos().precioCompra().toPlainString());
+            recalcular.run();
+        };
+
+        TextField escaner = new TextField();
+        escaner.setPromptText("Escanee el código de barras para agregar un producto y presione Enter");
+        escaner.setOnAction(evento -> {
+            String codigo = escaner.getText() == null ? "" : escaner.getText().trim();
+            escaner.clear();
+            if (!codigo.isEmpty()) {
+                procesarCodigo(codigo, agregarProducto);
+            }
+        });
+        VBox bloque = new VBox(8, escaner, filas, new HBox(12, agregar, totales));
         bloque.setPadding(new Insets(0, 0, 4, 0));
         f.agregarNodo(bloque);
         f.agregar("lineas", "", new Label(), true);
@@ -367,6 +415,30 @@ public class ComprasController implements Refrescable {
             notificador.mostrar(ventana(), aviso);
             cargar(0);
         });
+    }
+
+    /** Un codigo escaneado agrega el producto existente o abre el alta rapida si el codigo es nuevo. */
+    private void procesarCodigo(String codigo, Consumer<ProductoResumen> agregarProducto) {
+        Fondo.ejecutar(
+            () -> productoService.buscarPorCodigoBarras(codigo),
+            encontrado -> {
+                if (encontrado.isPresent()) {
+                    if (encontrado.get().estado()) {
+                        agregarProducto.accept(encontrado.get());
+                    } else {
+                        notificador.mostrar(ventana(), "El producto " + encontrado.get().datos().nombreComercial() + " está inactivo.");
+                    }
+                } else if (!Ean13.esValido(codigo)) {
+                    notificador.mostrar(ventana(), "Código no registrado y no es un EAN-13 válido: " + codigo);
+                } else {
+                    AltaRapidaProducto.abrir(
+                        ventana(), codigo, productoService, categoriaService, laboratorioService, agregarProducto,
+                        aviso -> notificador.mostrar(ventana(), aviso)
+                    );
+                }
+            },
+            error -> notificador.mostrar(ventana(), DialogoFormulario.textoError(error))
+        );
     }
 
     private LineaCompra leerLinea(int item, FilaLinea fila) {

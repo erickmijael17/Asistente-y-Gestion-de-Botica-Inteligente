@@ -11,8 +11,6 @@ import com.botica.inteligente.producto.service.ProductoResultado;
 import com.botica.inteligente.producto.service.ProductoResumen;
 import com.botica.inteligente.producto.service.ProductoService;
 import com.botica.inteligente.security.SesionActual;
-import com.botica.inteligente.shared.exception.CampoInvalidoException;
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import javafx.scene.Node;
@@ -204,9 +202,9 @@ public class ProductosController extends CatalogoController<ProductoResumen, Pro
                 indicaciones.getText(), contraindicaciones.getText(), advertencias.getText(),
                 precauciones.getText(), almacenamiento.getText(), requiereReceta.isSelected(),
                 registroSanitario.getText(),
-                decimal("precioCompra", precioCompra.getText()),
-                decimal("precioVenta", precioVenta.getText()),
-                entero("stockMinimo", stockMinimo.getText()),
+                EntradaNumerica.decimal("precioCompra", precioCompra.getText()),
+                EntradaNumerica.decimal("precioVenta", precioVenta.getText()),
+                EntradaNumerica.entero("stockMinimo", stockMinimo.getText()),
                 categoriaElegida == null ? null : categoriaElegida.id(),
                 laboratorioElegido == null ? null : laboratorioElegido.id(),
                 fuenteInformacion.getText()
@@ -220,29 +218,5 @@ public class ProductosController extends CatalogoController<ProductoResumen, Pro
                     : "Producto guardado. Aviso: " + resultado.advertencia();
             };
         });
-    }
-
-    private static BigDecimal decimal(String campo, String texto) {
-        String limpio = texto == null ? "" : texto.trim().replace(',', '.');
-        if (limpio.isEmpty()) {
-            return null;
-        }
-        try {
-            return new BigDecimal(limpio);
-        } catch (NumberFormatException error) {
-            throw new CampoInvalidoException(campo, "Ingrese un número válido.");
-        }
-    }
-
-    private static Integer entero(String campo, String texto) {
-        String limpio = texto == null ? "" : texto.trim();
-        if (limpio.isEmpty()) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(limpio);
-        } catch (NumberFormatException error) {
-            throw new CampoInvalidoException(campo, "Ingrese un número entero válido.");
-        }
     }
 }
