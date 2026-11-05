@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.botica.inteligente.ui.PlaceholderController" spacing="12" styleClass="placeholder-view">
-    <padding><Insets top="28" right="32" bottom="28" left="32" /></padding>
-    <Label text="Laboratorios" styleClass="section-title" />
-    <Label text="Directorio de laboratorios listo para la implementacion CRUD." wrapText="true" />
-    <Label fx:id="estadoVista" text="" styleClass="muted-text" />
+      fx:id="raiz" fx:controller="com.botica.inteligente.ui.LaboratoriosController" spacing="14" styleClass="placeholder-view">
+    <padding><Insets top="24" right="28" bottom="24" left="28" /></padding>
 </VBox>

@@ -44,7 +44,7 @@ class MigrationContextTest {
             .map(name -> name.toLowerCase(Locale.ROOT))
             .toList();
 
-        assertEquals(1, flyway.info().applied().length);
+        assertEquals(2, flyway.info().applied().length);
         assertTrue(normalizedTableNames.containsAll(
             List.of("usuarios", "categorias", "laboratorios", "productos")
         ));

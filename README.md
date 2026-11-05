@@ -31,7 +31,7 @@ mvn clean test
 |---|---|---|
 | 1 | Esqueleto, SQLite + Flyway, shell con tema | Hecha |
 | 2 | Login local y roles | Hecha |
-| 3 | Catalogo: categorias, laboratorios, productos | Pendiente |
+| 3 | Catalogo: categorias, laboratorios, productos | Hecha |
 | 4 | Inventario, lotes, kardex, compras | Pendiente |
 | 5 | Ventas / punto de venta | Pendiente |
 | 6 | Dashboard y escaneo EAN-13 | Pendiente |
