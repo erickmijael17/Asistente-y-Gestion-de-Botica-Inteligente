@@ -1,0 +1,64 @@
+.app-shell {
+    -fx-min-width: 960px;
+    -fx-min-height: 640px;
+}
+
+.sidebar {
+    -fx-pref-width: 230px;
+    -fx-padding: 24px 16px;
+    -fx-background-color: -color-bg-subtle;
+}
+
+.brand {
+    -fx-padding: 8px 10px 16px 10px;
+}
+
+.brand-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.brand-subtitle,
+.muted-text,
+.eyebrow {
+    -fx-text-fill: -color-fg-muted;
+}
+
+.navigation-button,
+.theme-button {
+    -fx-alignment: center-left;
+    -fx-padding: 10px 12px;
+}
+
+.main-content {
+    -fx-padding: 28px 32px;
+    -fx-background-color: -color-bg-default;
+}
+
+.page-header {
+    -fx-padding: 0 0 12px 0;
+}
+
+.eyebrow {
+    -fx-font-size: 12px;
+}
+
+.page-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+}
+
+.content-area {
+    -fx-alignment: top-left;
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 12px;
+}
+
+.placeholder-view {
+    -fx-alignment: top-left;
+}
+
+.section-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}

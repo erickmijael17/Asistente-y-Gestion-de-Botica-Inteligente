@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: botica-inteligente
+  main:
+    web-application-type: none
+  datasource:
+    url: jdbc:sqlite:${user.home}/.botica-inteligente/botica.db
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
+      minimum-idle: 1
+      connection-init-sql: 'PRAGMA foreign_keys=ON'
+  jpa:
+    open-in-view: false
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
