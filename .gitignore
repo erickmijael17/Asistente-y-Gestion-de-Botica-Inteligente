@@ -35,6 +35,10 @@ Thumbs.db
 # Scaffold duplicado (no usar)
 /escritorio/
 
+# Documentacion: solo README se versiona
+*.md
+!README.md
+
 # Environment
 .env
 application-local.yml
