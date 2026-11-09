@@ -3,6 +3,16 @@
 **El sistema de gestión para tu botica o farmacia independiente.**
 Control de inventario con vencimientos, ventas rápidas, compras simplificadas y un asistente con IA que te ayuda a encontrar el producto correcto en segundos — todo en una sola aplicación de escritorio, sin depender de internet para trabajar.
 
+![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-6DB33F?logo=springboot&logoColor=white)
+![JavaFX](https://img.shields.io/badge/JavaFX-21-ff6600)
+![SQLite](https://img.shields.io/badge/SQLite-embebida-003B57?logo=sqlite&logoColor=white)
+![Flyway](https://img.shields.io/badge/Flyway-migraciones-CC0200?logo=flyway&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-build-C71A36?logo=apachemaven&logoColor=white)
+![License](https://img.shields.io/badge/licencia-MIT-informational)
+
+**Tecnologías utilizadas:** Java 17 · Spring Boot 3.3 (sin servidor web) · JavaFX 21 + AtlantaFX · Ikonli · SQLite embebida · Flyway · Spring Data JPA + Hibernate · Spring Security Crypto (BCrypt) · OpenPDF · Jsoup · Lombok · Maven · JUnit 5.
+
 ![Dashboard de Botica Inteligente](docs/screenshots/02-dashboard.png)
 
 ---
@@ -86,11 +96,26 @@ Autenticación local con contraseñas cifradas (BCrypt) — no se depende de ser
 
 | Componente | Tecnología |
 |---|---|
-| Interfaz de escritorio | JavaFX 21 + AtlantaFX |
-| Lógica de negocio | Java 17 + Spring Boot 3.3 (sin servidor web) |
+| Interfaz de escritorio | JavaFX 21 + AtlantaFX + Ikonli (iconos) |
+| Lógica de negocio | Java 17 + Spring Boot 3.3 (sin servidor web, `web-application-type=none`) |
+| Persistencia | Spring Data JPA + Hibernate |
 | Base de datos | SQLite embebida, con migraciones versionadas (Flyway) |
-| Autenticación | BCrypt local, sin servicios externos |
+| Autenticación | BCrypt local (Spring Security Crypto), sin servicios externos |
+| Comprobantes | OpenPDF (generación de PDF) |
+| Búsqueda web de medicamentos | Jsoup |
+| Empaquetado del instalable | jpackage (JDK 17) |
+| Build | Maven |
 | Pruebas | JUnit 5 |
+
+---
+
+## Descargas
+
+¿No quieres compilar el proyecto? Descarga el instalador para Windows (incluye su propio runtime de Java, no requiere instalar JDK):
+
+- **[BoticaInteligente-0.1.0.exe](../../releases)** — instalador nativo de Windows. Disponible en la sección [Releases](../../releases) del repositorio.
+
+> Generado con `jpackage` + WiX Toolset a partir del JAR de la aplicación (`mvn clean package`). Instala la app, crea accesos directos y un desinstalador estándar de Windows.
 
 ---
 
