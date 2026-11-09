@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.botica.inteligente.ui.SetupInicialController" styleClass="auth-screen">
+    <VBox spacing="14" styleClass="auth-card">
+        <Label text="%setup.titulo" styleClass="auth-title" />
+        <Label text="%setup.subtitulo" wrapText="true" />
+        <Label text="%setup.usuario" />
+        <TextField fx:id="usernameField" promptText="%setup.usuario.prompt" />
+        <Label text="%setup.password" />
+        <PasswordField fx:id="passwordField" promptText="%setup.password.prompt" />
+        <Label text="%setup.confirmar" />
+        <PasswordField fx:id="confirmacionField" promptText="%setup.confirmar.prompt" />
+        <Label fx:id="errorLabel" wrapText="true" styleClass="auth-error" />
+        <Button fx:id="crearOwnerButton" text="%setup.crear" onAction="#crearOwner" maxWidth="Infinity" />
+    </VBox>
+</VBox>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.botica.inteligente.ui.MainController" styleClass="app-shell">
+    <left>
+        <VBox fx:id="barraLateral" spacing="6" styleClass="sidebar">
+            <VBox spacing="3" styleClass="brand">
+                <Label text="%main.brand.titulo" styleClass="brand-title" />
+                <Label text="%main.brand.subtitulo" styleClass="brand-subtitle" />
+            </VBox>
+            <Separator />
+            <Button text="%menu.inicio" userData="/view/dashboard-view.fxml" onAction="#mostrarDashboard" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-home" /></graphic>
+            </Button>
+            <Button text="%menu.vender" userData="/view/punto-venta-view.fxml" onAction="#mostrarPuntoVenta" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-shopping-cart" /></graphic>
+            </Button>
+            <Button text="%menu.productos" userData="/view/productos-view.fxml" onAction="#mostrarProductos" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-package" /></graphic>
+            </Button>
+            <Button text="%menu.categorias" userData="/view/categorias-view.fxml" onAction="#mostrarCategorias" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-tag" /></graphic>
+            </Button>
+            <Button text="%menu.laboratorios" userData="/view/laboratorios-view.fxml" onAction="#mostrarLaboratorios" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-layers" /></graphic>
+            </Button>
+            <Button text="%menu.ventas" userData="/view/ventas-view.fxml" onAction="#mostrarVentas" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-file-text" /></graphic>
+            </Button>
+            <Button text="%menu.inventario" userData="/view/inventario-view.fxml" onAction="#mostrarInventario" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-archive" /></graphic>
+            </Button>
+            <Button text="%menu.compras" userData="/view/compras-view.fxml" onAction="#mostrarCompras" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-truck" /></graphic>
+            </Button>
+            <Button fx:id="usuariosButton" text="%menu.usuarios" userData="/view/usuarios-view.fxml" onAction="#mostrarUsuarios" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-users" /></graphic>
+            </Button>
+            <Region VBox.vgrow="ALWAYS" />
+            <Button text="%menu.tema" onAction="#alternarTema" maxWidth="Infinity" styleClass="theme-button">
+                <graphic><FontIcon iconLiteral="fth-moon" /></graphic>
+            </Button>
+        </VBox>
+    </left>
+    <center>
+        <VBox spacing="20" styleClass="main-content">
+            <HBox alignment="CENTER_LEFT" styleClass="page-header">
+                <VBox spacing="4">
+                    <Label text="%menu.eyebrow" styleClass="eyebrow" />
+                    <Label fx:id="tituloVista" text="%menu.inicio" styleClass="page-title" />
+                </VBox>
+                <Region HBox.hgrow="ALWAYS" />
+                <HBox spacing="12" alignment="CENTER_RIGHT">
+                    <Label fx:id="usuarioActual" text="" styleClass="user-session-label" />
+                    <Button text="%menu.cerrarSesion" onAction="#cerrarSesion">
+                        <graphic><FontIcon iconLiteral="fth-log-out" /></graphic>
+                    </Button>
+                </HBox>
+            </HBox>
+            <StackPane fx:id="areaContenido" VBox.vgrow="ALWAYS" styleClass="content-area" />
+        </VBox>
+    </center>
+</BorderPane>

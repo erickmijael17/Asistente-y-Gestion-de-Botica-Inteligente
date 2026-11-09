@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.botica.inteligente.ui.UsuariosController" spacing="16" styleClass="placeholder-view">
+    <padding><Insets top="24" right="28" bottom="24" left="28" /></padding>
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <TextField fx:id="usernameField" promptText="%usuarios.username.prompt" HBox.hgrow="ALWAYS" />
+        <PasswordField fx:id="passwordField" promptText="%usuarios.password.prompt" />
+        <ComboBox fx:id="rolCombo" prefWidth="130" />
+        <Button fx:id="crearUsuarioButton" text="%usuarios.crear" onAction="#crearUsuario" />
+    </HBox>
+    <Label fx:id="mensajeLabel" styleClass="muted-text" />
+    <TableView fx:id="usuariosTabla" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="usernameColumn" text="%usuarios.columna.usuario" prefWidth="260" />
+            <TableColumn fx:id="rolColumn" text="%usuarios.columna.rol" prefWidth="150" />
+            <TableColumn fx:id="estadoColumn" text="%usuarios.columna.estado" prefWidth="130" />
+            <TableColumn fx:id="accionColumn" text="%usuarios.columna.accion" prefWidth="170" />
+        </columns>
+    </TableView>
+    <Button fx:id="actualizarButton" text="%usuarios.actualizar" onAction="#refrescar" />
+</VBox>

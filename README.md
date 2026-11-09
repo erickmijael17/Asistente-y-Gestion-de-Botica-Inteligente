@@ -1,244 +1,184 @@
-# 💊 Asistente y Gestión de Botica Inteligente
+# 💊 Botica Inteligente
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Java-22-007396?style=for-the-badge&logo=openjdk&logoColor=white" />
-  <img src="https://img.shields.io/badge/Spring_Boot-3.3.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" />
-  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
-  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
-  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
-</p>
+**El sistema de gestión para tu botica o farmacia independiente.**
+Control de inventario con vencimientos, ventas rápidas, compras simplificadas y un asistente con IA que te ayuda a encontrar el producto correcto en segundos — todo en una sola aplicación de escritorio, sin depender de internet para trabajar.
 
-<p align="center">
-  <b>Sistema web interno para la gestión integral de boticas</b><br/>
-  Ventas · Inventario · Reportes · Alertas · Chatbot IA farmacéutico
-</p>
+![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-6DB33F?logo=springboot&logoColor=white)
+![JavaFX](https://img.shields.io/badge/JavaFX-21-ff6600)
+![SQLite](https://img.shields.io/badge/SQLite-embebida-003B57?logo=sqlite&logoColor=white)
+![Flyway](https://img.shields.io/badge/Flyway-migraciones-CC0200?logo=flyway&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-build-C71A36?logo=apachemaven&logoColor=white)
+![License](https://img.shields.io/badge/licencia-MIT-informational)
 
-<p align="center">
-  <a href="http://localhost:8080/swagger-ui.html"><img src="https://img.shields.io/badge/Swagger-UI-85EA2D?style=flat-square&logo=swagger&logoColor=black" /></a>
-  <a href="http://localhost:8080/actuator/health"><img src="https://img.shields.io/badge/Health-UP-brightgreen?style=flat-square" /></a>
-  <a href="backend/docs/architecture/c4-model.md"><img src="https://img.shields.io/badge/Arquitectura-C4-blue?style=flat-square" /></a>
-  <img src="https://img.shields.io/badge/Estado-Desarrollo_Activo-orange?style=flat-square" />
-  <img src="https://img.shields.io/badge/Licencia-MIT-lightgrey?style=flat-square" />
-</p>
+**Tecnologías utilizadas:** Java 17 · Spring Boot 3.3 (sin servidor web) · JavaFX 21 + AtlantaFX · Ikonli · SQLite embebida · Flyway · Spring Data JPA + Hibernate · Spring Security Crypto (BCrypt) · OpenPDF · Jsoup · Lombok · Maven · JUnit 5.
+
+![Dashboard de Botica Inteligente](docs/screenshots/02-dashboard.png)
 
 ---
 
-## ✨ Visión
+## ¿Por qué Botica Inteligente?
 
-Plataforma para que **Gerentes** y **Vendedores** gestionen una botica de forma ágil, con un **Chatbot IA** conectado directamente al inventario.
+Administrar una botica a mano (o con hojas de cálculo) significa perder ventas por falta de stock, vender productos vencidos sin darse cuenta y no tener claridad de cuánto se gana cada mes. **Botica Inteligente** resuelve esto con una aplicación pensada para el día a día de una botica real, no un ERP genérico sobredimensionado:
 
-> **Ejemplo:** el vendedor pregunta *“pastillas para la fiebre”* y el chatbot, en lugar de ofrecer siempre el mismo medicamento, consulta `productos.principio_activo` e `indicaciones_oficiales` y sugiere alternativas disponibles en stock.
-
-| Rol | Permisos clave |
-|-----|----------------|
-| **Gerente `ROLE_OWNER`** | CRUD catálogo, anular ventas, dashboard, reportes |
-| **Vendedor `ROLE_SELLER`** | Vender, consultar catálogo y productos |
-
----
-
-## 🧱 Arquitectura — Monolito Modular (una sola BD)
-
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│  Frontend  React 19 + Vite 8 + Tailwind 4  (http://localhost:5173) │
-│  api/client.ts (Axios + JWT) → services/* → features/*            │
-└───────────────────────────┬──────────────────────────────────────┘
-                            │  /api  (Vite proxy → 8080, CORS)
-                            ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  Backend  Spring Boot 3.3.5  Java 22  (http://localhost:8080)      │
-│  Security JWT (stateless) | Controllers | Services | Repositories │
-│  PostgreSQL 16  botica_inteligente_db  schema botica  ddl-auto:update │
-└───────────────────────────┬──────────────────────────────────────┘
-                            │ 5432
-                            ▼
-              Docker  botica-postgres + botica-keycloak (8081)
-```
-
-* **Sin Flyway en `dev`** — `resources` limpio con un único `backend/src/main/resources/application.yml`. Tablas se generan vía `@Entity`/`@Table` por módulo (`categoria`, `laboratorio`, `producto`, `usuario`, `venta`) + `hibernate.default_schema=botica` + `hbm2ddl.create_namespaces=true`.
-* **Para prod futuro:** reintroducir Flyway con `ddl-auto:validate` y `V1__*.sql`.
-
-> Ver [C4 Model](backend/docs/architecture/c4-model.md) y [Integración Frontend ↔ Backend](frontend/docs/INTEGRACION_BACKEND.md) — verificado `2026-08-23` `Vite 5173 /api -> 8080` y `JWT` case-insensitive.
+- ✅ **Control total del inventario**, por lotes y fechas de vencimiento.
+- ✅ **Punto de venta rápido**, pensado para atender en segundos.
+- ✅ **Asistente con IA** que sugiere qué productos sirven para una dolencia, con stock y precio en tiempo real.
+- ✅ **Compras simples**, sin trámites innecesarios.
+- ✅ **Dashboard** con las cifras clave del negocio, sin configuración.
+- ✅ **Funciona sin internet** para toda la operación diaria (venta, inventario, compras).
+- ✅ **Roles de usuario**: el dueño controla todo; el personal de venta solo opera lo que le corresponde.
+- ✅ **Disponible en español e inglés**, configurable desde el login.
 
 ---
 
-## 🚀 Stack
+## Funcionalidades
 
-| Capa | Tecnologías |
-|------|-------------|
-| **Backend** | Spring Boot 3.3.5, Web, Data JPA, Validation, Security + JWT (jjwt 0.12.5), OAuth2 Resource Server (Keycloak 25), Hibernate 6.5, HikariCP, MapStruct 1.6, Lombok |
-| **Frontend** | React 19, TypeScript 5.7, Vite 8, Tailwind 4, Axios 1.19, React Router 7, Recharts 3, jwt-decode 4 |
-| **Datos** | PostgreSQL 16 (Docker), ddl-auto:update |
-| **Docs & Test** | Springdoc OpenAPI 2.6 / Swagger, JUnit 5, Mockito, Testcontainers 1.20, ArchUnit 1.3, AssertJ |
+### 🧠 Asistente de ventas con IA
 
----
+El diferencial de Botica Inteligente. En la pantalla de **Vender**, el farmacéutico escribe o selecciona la dolencia del paciente ("fiebre", "dolor de garganta", etc.) y el asistente busca en el catálogo propio qué productos sirven, mostrando el principio activo, el stock disponible y el precio — listos para agregar al carrito con un clic.
 
-## 📁 Estructura
+![Asistente de IA en el punto de venta](docs/screenshots/03-vender-asistente.png)
 
-```text
-├── backend/               # Monolito Spring Boot
-│   ├── src/main/java/com/botica/inteligente
-│   │   ├── categoria, laboratorio, producto, venta, usuario
-│   │   ├── security (JwtService, SecurityConfig)
-│   │   └── shared (audit, exception, response)
-│   └── src/main/resources/application.yml  # único, limpio
-├── frontend/              # React + Vite
-│   ├── src/api/client.ts  # Axios + Bearer + 401 -> sesion expirada
-│   ├── src/features/{auth,dashboard,pos,catalogo}
-│   └── vite.config.ts     # proxy /api -> 8080
-├── docker-compose.yml     # Postgres + Keycloak (si aplica)
-└── docs/
-```
+> El asistente **no diagnostica ni prescribe**: solo acerca información ya cargada en el catálogo (de laboratorio o cargada manualmente) para que el farmacéutico de turno decida. La responsabilidad de la recomendación y la entrega es siempre de la persona a cargo — esto se muestra en cada respuesta, como respaldo legal del negocio.
 
----
+### 📦 Catálogo de productos con código de barras
 
-## ⚡ Quick Start (dev monolito)
+Alta de productos con generación automática de código interno, escaneo de código de barras EAN-13, categorías, tipo de producto y control de si requiere receta médica. El laboratorio o droguería es opcional, porque en la práctica muchas compras llegan de intermediarios.
 
-### 1. Infraestructura
+![Catálogo de productos](docs/screenshots/04-productos.png)
 
-```bash
-cd backend
-docker compose up -d          # botica-postgres:5432 healthy + botica-keycloak:8081
-docker ps                     # verifica Up
-```
+### 🔎 Búsqueda web de información del medicamento
 
-### 2. Backend
+Al registrar un medicamento, un botón de **"Buscar información (web)"** permite traer indicaciones, contraindicaciones y advertencias desde internet para completar la ficha del producto — siempre mostrando el resultado para que el farmacéutico lo revise y edite antes de guardar. Nunca se guarda nada automáticamente.
 
-```bash
-cd backend
-# requiere JDK 22 en JAVA_HOME
-mvn clean compile
-mvn spring-boot:run           # http://localhost:8080
-# alternativo
-mvn package -DskipTests && java -jar target/*.jar
-```
+![Búsqueda web de información del medicamento](docs/screenshots/08-busqueda-web.png)
 
-*Swagger:* `http://localhost:8080/swagger-ui.html` · *Health:* `http://localhost:8080/actuator/health`
+### 🛒 Compras simplificadas
 
-### 3. Frontend
+Registrar una compra toma segundos: tipo de comprobante (boleta, factura o recibo), fecha y los productos recibidos con su lote y vencimiento. El RUC del proveedor es opcional, para no frenar una compra urgente por no tener el dato a mano.
 
-```bash
-cd frontend
-cp .env.example .env.local   # VITE_API_URL=/api
-npm install
-npm run dev                   # http://localhost:5173
-```
+![Registro de nueva compra](docs/screenshots/05-nueva-compra.png)
 
-> `VITE_API_URL=/api` usa el proxy de Vite (`vite.config.ts:22` `/api -> http://localhost:8080`). En prod usa URL absoluta `https://api.tu-dominio.com/api`.
+### 📊 Inventario con alertas de vencimiento
 
-### 4. Verificar integración (probado 2026-08-23)
+Visión clara del stock por producto y por lote, con alertas de stock bajo y de productos próximos a vencer — la causa más común de pérdidas en una botica.
 
-```bash
-# Crear vendedor
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"vendedor.botica","password":"Vendedor123!","nombres":"Vendedor","apellidos":"Botica"}'
+![Control de inventario](docs/screenshots/06-inventario.png)
 
-# Login (case-insensitive + trim)
-curl -X POST http://localhost:8080/api/auth/login \
-  -d '{"username":"vendedor.botica","password":"Vendedor123!"}'
+### 📈 Dashboard gerencial
 
-# Vía Vite proxy (frontend -> backend)
-curl -X POST http://localhost:5173/api/auth/login \
-  -d '{"username":"ADMINISTRADOR","password":"Admin123!"}'  # funciona igual
+Ventas del período, número de tickets, ticket promedio y utilidad bruta de un vistazo, además de los productos más vendidos y las alertas de inventario que requieren atención.
 
-# Con token
-curl http://localhost:8080/api/v1/categorias -H "Authorization: Bearer <token>"
-```
+### 👥 Roles y seguridad
 
-O desde la UI: `http://localhost:5173/login` -> `Administrador / Admin123!` (o el usuario que creaste). El sistema es **case-insensitive** y hace `trim()`.
+Dos perfiles claramente diferenciados:
+
+| Rol | Puede |
+|---|---|
+| **OWNER** (dueño) | Todo: productos, categorías, laboratorios, compras, usuarios y reportes completos |
+| **SELLER** (vendedor) | Vender y consultar el catálogo e inventario, sin acceso a crear productos, compras ni usuarios |
+
+Autenticación local con contraseñas cifradas (BCrypt) — no se depende de servicios externos para iniciar sesión.
 
 ---
 
-## 🔐 Seguridad
+## Por qué es una inversión segura
 
-* **JWT stateless** `JwtService.java:20` `spring.security.jwt.secret` + `expiration`
-* **Roles** `ROLE_OWNER` / `ROLE_SELLER` desde claim `roles`, convertidos por `SecurityConfig.java:37`
-* **Rutas públicas:** `/api/auth/**`, `/actuator/health`, `/v3/api-docs/**`, `/swagger-ui/**`
-* **Reglas:** `GET` catálogo `OWNER|SELLER`, `POST/PUT/PATCH` solo `OWNER`, `anyRequest.authenticated`
+- **100% de escritorio, 100% tuyo.** Los datos de tu botica (ventas, clientes, inventario) se guardan en tu propia computadora, no en la nube de un tercero.
+- **No necesita internet para trabajar.** Solo la búsqueda web opcional de información de medicamentos requiere conexión; el resto de la operación (ventas, inventario, compras, dashboard) funciona completamente offline.
+- **Tecnología madura y probada**: Java 17, Spring Boot y SQLite — un stack estable, sin dependencias exóticas que puedan dejar de mantenerse.
+- **Cobertura de pruebas automatizadas** sobre las reglas de negocio críticas (stock, precios, permisos), para evitar errores costosos.
 
 ---
 
-## 🗄️ Base de Datos (dev)
+## Stack técnico
 
-```text
-POSTGRES_DB=botica_inteligente_db
-POSTGRES_USER=botica_user
-POSTGRES_PASSWORD=botica_password
-schema: botica
+| Componente | Tecnología |
+|---|---|
+| Interfaz de escritorio | JavaFX 21 + AtlantaFX + Ikonli (iconos) |
+| Lógica de negocio | Java 17 + Spring Boot 3.3 (sin servidor web, `web-application-type=none`) |
+| Persistencia | Spring Data JPA + Hibernate |
+| Base de datos | SQLite embebida, con migraciones versionadas (Flyway) |
+| Autenticación | BCrypt local (Spring Security Crypto), sin servicios externos |
+| Comprobantes | OpenPDF (generación de PDF) |
+| Búsqueda web de medicamentos | Jsoup |
+| Empaquetado del instalable | jpackage (JDK 17) |
+| Build | Maven |
+| Pruebas | JUnit 5 |
+
+---
+
+## Descargas
+
+¿No quieres compilar el proyecto? Descarga el instalador para Windows (incluye su propio runtime de Java, no requiere instalar JDK):
+
+- **[BoticaInteligente-0.1.0.exe](../../releases)** — instalador nativo de Windows. Disponible en la sección [Releases](../../releases) del repositorio.
+
+> Generado con `jpackage` + WiX Toolset a partir del JAR de la aplicación (`mvn clean package`). Instala la app, crea accesos directos y un desinstalador estándar de Windows.
+
+---
+
+## Instalación / Demo
+
+**Requisitos:** JDK 17 y Maven.
+
+```powershell
+$env:JAVA_HOME="C:\Program Files\Microsoft\jdk-17.0.18.8-hotspot"
+mvn javafx:run
 ```
 
-Tablas auto-generadas: `categorias, laboratorios, productos, usuario, ventas, venta_detalles` + auditoría `fecha_creacion/actualizacion` (`shared/audit/AuditableEntity`).
+En el primer arranque, la app solicita crear el usuario propietario (OWNER). La base de datos se crea automáticamente en `~/.botica-inteligente/botica.db` — no requiere instalar un gestor de base de datos aparte.
 
-```bash
-docker exec botica-postgres psql -U botica_user -d botica_inteligente_db -c "\dt botica.*"
-docker exec botica-postgres psql -U botica_user -d botica_inteligente_db -c "TRUNCATE botica.usuario CASCADE;"
+Para ejecutar las pruebas automatizadas:
+
+```powershell
+mvn clean test
 ```
 
 ---
 
-## 🧪 Testing
+## Configuración opcional
 
-```bash
-cd backend
-mvn test                                   # 29 tests (unit + integración con botica-postgres Docker)
-mvn -Dtest=DatabaseMigrationIntegrationTest test  # verifica ddl-auto crea 6 tablas
-```
+Personalizable desde `application.yml` o variables de entorno, sin tocar código:
 
-*No usar H2 para simular PostgreSQL.*
-
----
-
-## 🔑 Variables de entorno
-
-| Variable | Descripción | Ejemplo dev |
-|----------|-------------|-------------|
-| `DB_URL` | JDBC con `currentSchema` | `jdbc:postgresql://localhost:5432/botica_inteligente_db?currentSchema=botica` |
-| `DB_USERNAME` / `DB_PASSWORD` | Credenciales | `botica_user / botica_password` |
-| `JWT_SECRET` / `JWT_EXPIRATION` | JWT | base64 de 64 bytes / `86400000` |
-| `KEYCLOAK_ISSUER_URI` | Opcional OAuth2 | `http://localhost:8081/realms/botica-inteligente` |
-| `CORS_ALLOWED_ORIGINS` | CORS | `http://localhost:5173,http://127.0.0.1:5173` |
-| `VITE_API_URL` | Frontend | `/api` (dev) / `https://api.../api` (prod) |
-
-Ver `backend/.env.example` y `frontend/.env.example`.
+| Propiedad | Por defecto | Uso |
+|---|---|---|
+| `botica.igv.tasa` | `0.18` | Tasa de IGV aplicada en compras y ventas |
+| `botica.serie.boleta` | `B001` | Serie de las boletas de venta |
+| `botica.serie.nota-venta` | `NV01` | Serie de las notas de venta |
+| `botica.empresa.nombre`, `.ruc`, `.direccion`, `.telefono` | `Botica Inteligente` y vacíos | Datos del emisor que aparecen en el comprobante PDF |
 
 ---
 
-## 📦 Endpoints Fase 1
+## Estado del desarrollo
 
-| Módulo | Método | Ruta |
-|--------|--------|------|
-| **Auth** | `POST` | `/api/auth/register`, `/api/auth/login` |
-| **Categorías** | `GET` `/api/v1/categorias`, `GET /{id}`, `POST`, `PUT /{id}`, `PATCH /{id}/estado` |
-| **Laboratorios** | `GET` `/api/v1/laboratorios` ... |
-| **Productos** | `GET` `/api/v1/productos`, `GET /codigo-barras/{codigo}`, `POST`, `PUT`, `PATCH` |
-| **Ventas** | `GET` `/api/v1/ventas`, `POST`, `PATCH /{id}/anular` |
+| Fase | Contenido | Estado |
+|---|---|---|
+| 1 | Base del proyecto, SQLite + Flyway, interfaz con tema | ✅ Hecha |
+| 2 | Login local y roles (OWNER / SELLER) | ✅ Hecha |
+| 3 | Catálogo: categorías, laboratorios, productos | ✅ Hecha |
+| 4 | Inventario, lotes, kardex, compras | ✅ Hecha |
+| 5 | Ventas / punto de venta | ✅ Hecha |
+| 6 | Dashboard y escaneo de código de barras EAN-13 | ✅ Hecha |
+| 7 | Asistente de consulta de medicamentos con IA | ✅ Hecha |
+| 8 | Internacionalización (español / inglés) | ✅ Hecha |
+| 9 | Búsqueda web de información de medicamentos | ✅ Hecha |
 
----
-
-## 🐳 Producción
-
-```bash
-cd backend && mvn clean package -DskipTests && java -jar target/*.jar  # usa variables de prod
-cd frontend && echo "VITE_API_URL=https://api.tu-dominio.com/api" > .env.production && npm run build
-# servir dist/ con Nginx (SPA)
-```
+Plan completo y reglas de negocio detalladas: [MIGRACION.md](MIGRACION.md).
 
 ---
 
-## 📚 Documentación
+## Licencia
 
-* [AGENTS.md](AGENTS.md) — guía para agentes y colaboradores
-* [C4 Model](backend/docs/architecture/c4-model.md)
-* [Integración Frontend-Backend](frontend/docs/INTEGRACION_BACKEND.md)
-* [Guía Despliegue](GUIA_DESPLIEGUE.md)
+Proyecto de código abierto bajo licencia **MIT**. El software se entrega "tal cual" (*as is*), sin ninguna garantía expresa o implícita; el equipo de desarrollo no se hace responsable por daños, pérdidas o perjuicios derivados de su uso. Ver [LICENSE](LICENSE) para el texto completo.
 
----
+## Aviso importante sobre el Asistente de IA
 
-## 📄 Licencia
+El **Asistente de Botica Inteligente** es una herramienta de apoyo informativo: **recomienda, no receta**. Sus sugerencias se basan en información cargada en el catálogo (de laboratorio o de internet, sujeta a revisión manual) y en ningún caso constituyen un diagnóstico, una indicación médica ni un reemplazo del criterio profesional.
 
-MIT — Proyecto académico para la gestión de boticas.
+- El uso de la aplicación, y en particular la dispensación de cualquier medicamento, **debe estar siempre acompañado y validado por un profesional químico farmacéutico autorizado**.
+- La decisión final de recomendar, vender o entregar un medicamento es **responsabilidad exclusiva** de la persona autorizada a cargo en el punto de venta — nunca de la aplicación ni de sus desarrolladores.
+- Los autores y colaboradores de este proyecto **no asumen responsabilidad alguna** por el uso indebido de la información mostrada, por decisiones de dispensación tomadas sin la validación de un profesional competente, ni por las consecuencias que de ello se deriven.
 
-<p align="center">
-  <b>Hecho con ❤️ para boticas inteligentes</b> — <code>monolito dev</code> · <code>resources limpio</code> · <code>29 tests OK</code>
-</p>
+Este aviso se refuerza en pantalla: cada respuesta del Asistente incluye el mismo recordatorio para quien lo esté usando en el momento de la venta.
