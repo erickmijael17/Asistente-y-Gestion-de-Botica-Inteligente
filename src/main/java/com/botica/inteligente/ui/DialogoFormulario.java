@@ -2,6 +2,7 @@ package com.botica.inteligente.ui;
 
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -46,7 +47,7 @@ public final class DialogoFormulario {
         desplazamiento.setPrefViewportHeight(520);
         desplazamiento.setPadding(new Insets(4));
         dialogo.getDialogPane().setContent(desplazamiento);
-        ButtonType guardar = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
+        ButtonType guardar = new ButtonType(Mensajes.get("dialogo.guardar"), ButtonBar.ButtonData.OK_DONE);
         dialogo.getDialogPane().getButtonTypes().addAll(guardar, ButtonType.CANCEL);
         Button botonGuardar = (Button) dialogo.getDialogPane().lookupButton(guardar);
         botonGuardar.addEventFilter(ActionEvent.ACTION, evento -> {
@@ -99,6 +100,6 @@ public final class DialogoFormulario {
             return error.getMessage();
         }
         log.error("Error inesperado al guardar", error);
-        return "No se pudo completar la operación.";
+        return Mensajes.get("usuarios.errorGenerico");
     }
 }

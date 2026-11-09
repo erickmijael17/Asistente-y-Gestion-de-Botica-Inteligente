@@ -1,6 +1,7 @@
 package com.botica.inteligente.shared.util;
 
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 
 public final class Textos {
 
@@ -19,7 +20,7 @@ public final class Textos {
     public static String requerido(String campo, String etiqueta, String texto, int maximo) {
         String limpio = limpiar(texto);
         if (limpio == null) {
-            throw new CampoInvalidoException(campo, "Ingrese " + etiqueta + ".");
+            throw new CampoInvalidoException(campo, Mensajes.get("validacion.requerido", etiqueta));
         }
         return maximo(campo, etiqueta, limpio, maximo);
     }
@@ -31,7 +32,7 @@ public final class Textos {
     private static String maximo(String campo, String etiqueta, String texto, int maximo) {
         if (texto != null && texto.length() > maximo) {
             throw new CampoInvalidoException(
-                campo, "El campo " + etiqueta + " no puede superar " + maximo + " caracteres."
+                campo, Mensajes.get("validacion.maximoCaracteres", etiqueta, String.valueOf(maximo))
             );
         }
         return texto;

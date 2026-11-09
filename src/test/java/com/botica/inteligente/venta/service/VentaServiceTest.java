@@ -123,7 +123,7 @@ class VentaServiceTest {
 
         sesionActual.autenticar(owner);
         compraService.registrar(new NuevaCompra(
-            "20123456789", "Distribuidora SAC", TipoDocumentoCompra.FACTURA, "F001-1", LocalDate.now(), false, false,
+            "20123456789", TipoDocumentoCompra.FACTURA, LocalDate.now(), false, false,
             null, List.of(new LineaCompra(producto.getId(), 10, new BigDecimal("5.00"), "LOTE-A", LocalDate.now().plusDays(300)))
         ));
         sesionActual.autenticar(seller);

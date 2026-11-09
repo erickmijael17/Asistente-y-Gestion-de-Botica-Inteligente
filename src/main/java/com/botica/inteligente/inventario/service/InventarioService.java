@@ -10,6 +10,7 @@ import com.botica.inteligente.producto.entity.Producto;
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.Textos;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -36,7 +37,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class InventarioService {
 
     private static final Logger log = LoggerFactory.getLogger(InventarioService.class);
-    private static final String SIN_PERMISO = "No tiene permisos para modificar el inventario.";
 
     private final LoteRepository loteRepository;
     private final MovimientoInventarioRepository movimientoRepository;
@@ -160,7 +160,7 @@ public class InventarioService {
             throw new IllegalArgumentException("El tipo " + tipo + " no es una entrada.");
         }
         if (cantidad <= 0) {
-            throw new NegocioException("La cantidad debe ser mayor a cero.");
+            throw new NegocioException(Mensajes.get("error.inventario.cantidadMayorACero"));
         }
         long stockAntes = loteRepository.stockTotal(producto.getId());
         Lote lote = loteRepository.findByProductoIdAndCodigoLote(producto.getId(), codigoLote).orElse(null);
@@ -175,7 +175,7 @@ public class InventarioService {
         } else {
             if (vencimiento != null && !vencimiento.equals(lote.getFechaVencimiento())) {
                 throw new CampoInvalidoException(
-                    "lote", "El lote " + codigoLote + " ya existe con otra fecha de vencimiento."
+                    "lote", Mensajes.get("error.inventario.loteOtraFechaVencimiento", codigoLote)
                 );
             }
             lote.setCantidadActual(lote.getCantidadActual() + cantidad);
@@ -199,11 +199,14 @@ public class InventarioService {
             throw new IllegalArgumentException("El tipo " + tipo + " no es una salida.");
         }
         if (cantidad <= 0) {
-            throw new NegocioException("La cantidad debe ser mayor a cero.");
+            throw new NegocioException(Mensajes.get("error.inventario.cantidadMayorACero"));
         }
         if (lote.getCantidadActual() < cantidad) {
             throw new NegocioException(
-                "El lote " + lote.getCodigoLote() + " solo tiene " + lote.getCantidadActual() + " unidades."
+                Mensajes.get(
+                    "error.inventario.loteUnidadesInsuficientes",
+                    lote.getCodigoLote(), String.valueOf(lote.getCantidadActual())
+                )
             );
         }
         long stockAntes = loteRepository.stockTotal(lote.getProducto().getId());
@@ -224,14 +227,16 @@ public class InventarioService {
         Producto producto, int cantidad, TipoMovimiento tipo, MovimientoContexto contexto
     ) {
         if (cantidad <= 0) {
-            throw new NegocioException("La cantidad debe ser mayor a cero.");
+            throw new NegocioException(Mensajes.get("error.inventario.cantidadMayorACero"));
         }
         LocalDate hoy = LocalDate.now();
         long disponible = loteRepository.stockDisponible(producto.getId(), hoy);
         if (disponible < cantidad) {
             throw new NegocioException(
-                "Stock insuficiente de " + producto.getNombreComercial() + ": disponible " + disponible
-                    + ", solicitado " + cantidad + "."
+                Mensajes.get(
+                    "error.inventario.stockInsuficiente",
+                    producto.getNombreComercial(), String.valueOf(disponible), String.valueOf(cantidad)
+                )
             );
         }
         List<ConsumoLote> consumos = new ArrayList<>();
@@ -256,8 +261,10 @@ public class InventarioService {
             long disponible = loteRepository.stockDisponible(producto.getId(), hoy);
             if (disponible < cantidad) {
                 throw new NegocioException(
-                    "Stock insuficiente de " + producto.getNombreComercial() + ": disponible " + disponible
-                        + ", solicitado " + cantidad + "."
+                    Mensajes.get(
+                        "error.inventario.stockInsuficiente",
+                        producto.getNombreComercial(), String.valueOf(disponible), String.valueOf(cantidad)
+                    )
                 );
             }
         });
@@ -266,9 +273,9 @@ public class InventarioService {
     /** Da de baja unidades de un lote (vencidos, danados). Solo OWNER. */
     @Transactional
     public void registrarMerma(Long loteId, int cantidad, String motivo) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.inventario.sinPermiso"));
         Lote lote = loteRepository.findById(loteId)
-            .orElseThrow(() -> new NegocioException("No se encontró el lote seleccionado."));
+            .orElseThrow(() -> new NegocioException(Mensajes.get("error.inventario.loteNoEncontrado")));
         String detalle = Textos.requerido("motivo", "el motivo", motivo, 40);
         Long usuarioId = sesionActual.usuarioAutenticado().map(u -> u.id()).orElse(null);
         registrarSalidaDeLote(lote, cantidad, TipoMovimiento.MERMA, MovimientoContexto.ajuste(detalle, usuarioId));

@@ -1,5 +1,6 @@
 package com.botica.inteligente.ui;
 
+import com.botica.inteligente.shared.i18n.Mensajes;
 import java.util.function.IntConsumer;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -12,8 +13,8 @@ import org.springframework.data.domain.Page;
 /** Barra de paginacion para resultados de Spring Data. */
 public class Paginador extends HBox {
 
-    private final Button anterior = new Button("‹ Anterior");
-    private final Button siguiente = new Button("Siguiente ›");
+    private final Button anterior = new Button("‹ " + Mensajes.get("paginador.anterior"));
+    private final Button siguiente = new Button(Mensajes.get("paginador.siguiente") + " ›");
     private final Label informacion = new Label();
     private int pagina;
 
@@ -32,9 +33,12 @@ public class Paginador extends HBox {
     public void actualizar(Page<?> resultado) {
         pagina = resultado.getNumber();
         int totalPaginas = Math.max(resultado.getTotalPages(), 1);
-        informacion.setText(
-            resultado.getTotalElements() + " registros · página " + (pagina + 1) + " de " + totalPaginas
-        );
+        informacion.setText(Mensajes.get(
+            "paginador.resumen",
+            String.valueOf(resultado.getTotalElements()),
+            String.valueOf(pagina + 1),
+            String.valueOf(totalPaginas)
+        ));
         anterior.setDisable(!resultado.hasPrevious());
         siguiente.setDisable(!resultado.hasNext());
     }

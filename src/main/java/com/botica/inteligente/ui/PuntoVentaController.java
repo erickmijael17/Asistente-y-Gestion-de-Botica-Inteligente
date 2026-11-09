@@ -7,6 +7,7 @@ import com.botica.inteligente.inventario.service.InventarioService;
 import com.botica.inteligente.producto.service.ProductoFiltro;
 import com.botica.inteligente.producto.service.ProductoResumen;
 import com.botica.inteligente.producto.service.ProductoService;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.CalculadoraIgv;
 import com.botica.inteligente.venta.enums.TipoComprobante;
 import com.botica.inteligente.venta.service.ComprobantePdfService;
@@ -78,14 +79,14 @@ public class PuntoVentaController implements Refrescable {
     private final ComboBox<TipoComprobante> tipo = new ComboBox<>();
     private final TextField clienteNombre = new TextField();
     private final TextField clienteDocumento = new TextField();
-    private final CheckBox aplicaIgv = new CheckBox("Aplica IGV");
-    private final CheckBox incluyeIgv = new CheckBox("Los precios incluyen IGV");
+    private final CheckBox aplicaIgv = new CheckBox(Mensajes.get("compra.form.aplicaIgvLabel"));
+    private final CheckBox incluyeIgv = new CheckBox(Mensajes.get("puntoVenta.preciosIncluyenIgv"));
     private final TextField observacion = new TextField();
     private final Label base = new Label();
     private final Label igv = new Label();
     private final Label total = new Label();
     private final Label error = new Label();
-    private final Button cobrar = new Button("Cobrar");
+    private final Button cobrar = new Button(Mensajes.get("puntoVenta.cobrar"));
     private PanelAsistente panelAsistente;
 
     /** Linea del carrito: producto, cantidad editable y stock vendible al momento de agregarlo. */
@@ -135,9 +136,9 @@ public class PuntoVentaController implements Refrescable {
 
     @FXML
     public void initialize() {
-        escaner.setPromptText("Escanee el código de barras y presione Enter");
+        escaner.setPromptText(Mensajes.get("puntoVenta.escaner.prompt"));
         escaner.setOnAction(evento -> escanear());
-        buscador.setPromptText("…o busque un producto por nombre o código");
+        buscador.setPromptText(Mensajes.get("puntoVenta.buscador.prompt"));
         buscador.setPrefWidth(380);
         buscador.valueProperty().addListener((obs, anterior, producto) -> {
             if (producto != null) {
@@ -189,13 +190,14 @@ public class PuntoVentaController implements Refrescable {
 
     private void configurarTabla() {
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tabla.setPlaceholder(new Label("El carrito está vacío"));
+        tabla.setPlaceholder(new Label(Mensajes.get("puntoVenta.carritoVacio")));
         tabla.setEditable(true);
-        texto("Producto", 210, l -> l.producto.datos().codigoInterno() + " · " + l.producto.datos().nombreComercial());
-        texto("Stock", 55, l -> String.valueOf(l.stock));
-        texto("Precio", 70, l -> dinero(l.precio()));
+        texto(Mensajes.get("producto.columna.producto"), 210,
+            l -> l.producto.datos().codigoInterno() + " · " + l.producto.datos().nombreComercial());
+        texto(Mensajes.get("inventario.columna.stock"), 55, l -> String.valueOf(l.stock));
+        texto(Mensajes.get("venta.columna.precio"), 70, l -> dinero(l.precio()));
 
-        TableColumn<Linea, Integer> cantidad = new TableColumn<>("Cant.");
+        TableColumn<Linea, Integer> cantidad = new TableColumn<>(Mensajes.get("compra.columna.cant"));
         cantidad.setPrefWidth(55);
         cantidad.setEditable(true);
         cantidad.setCellValueFactory(c -> c.getValue().cantidad.asObject());
@@ -213,9 +215,9 @@ public class PuntoVentaController implements Refrescable {
             Linea linea = evento.getRowValue();
             Integer nueva = evento.getNewValue();
             if (nueva == null || nueva < 1) {
-                avisar("La cantidad debe ser al menos 1.");
+                avisar(Mensajes.get("puntoVenta.cantidadMinima"));
             } else if (nueva > linea.stock) {
-                avisar("Solo hay " + linea.stock + " unidades disponibles.");
+                avisar(Mensajes.get("puntoVenta.unidadesDisponibles", String.valueOf(linea.stock)));
             } else {
                 linea.cantidad.set(nueva);
             }
@@ -223,7 +225,7 @@ public class PuntoVentaController implements Refrescable {
             recalcular();
         });
         tabla.getColumns().add(cantidad);
-        texto("Importe", 80, l -> dinero(l.importe()));
+        texto(Mensajes.get("compra.columna.importe"), 80, l -> dinero(l.importe()));
 
         TableColumn<Linea, Linea> quitar = new TableColumn<>("");
         quitar.setPrefWidth(46);
@@ -270,9 +272,9 @@ public class PuntoVentaController implements Refrescable {
             return coincidencias.size() == 1 ? java.util.Optional.of(coincidencias.get(0)) : java.util.Optional.<ProductoResumen>empty();
         }, resultado -> {
             if (resultado.isEmpty()) {
-                avisar("Producto no encontrado: " + codigo);
+                avisar(Mensajes.get("puntoVenta.productoNoEncontrado", codigo));
             } else if (!resultado.get().estado()) {
-                avisar("El producto " + resultado.get().datos().nombreComercial() + " está inactivo.");
+                avisar(Mensajes.get("compra.productoInactivo", resultado.get().datos().nombreComercial()));
             } else {
                 agregarProducto(resultado.get());
             }
@@ -284,7 +286,9 @@ public class PuntoVentaController implements Refrescable {
         Linea existente = carrito.stream().filter(l -> l.producto.id().equals(producto.id())).findFirst().orElse(null);
         if (existente != null) {
             if (existente.cantidad.get() + 1 > existente.stock) {
-                avisar("Solo hay " + existente.stock + " unidades disponibles de " + producto.datos().nombreComercial() + ".");
+                avisar(Mensajes.get(
+                    "puntoVenta.unidadesDisponiblesDe", String.valueOf(existente.stock), producto.datos().nombreComercial()
+                ));
             } else {
                 existente.cantidad.set(existente.cantidad.get() + 1);
                 tabla.refresh();
@@ -296,7 +300,7 @@ public class PuntoVentaController implements Refrescable {
             () -> inventarioService.stockDisponible(producto.id()),
             stock -> {
                 if (stock < 1) {
-                    avisar("Sin stock disponible de " + producto.datos().nombreComercial() + ".");
+                    avisar(Mensajes.get("puntoVenta.sinStockDe", producto.datos().nombreComercial()));
                 } else {
                     carrito.add(new Linea(producto, stock));
                 }
@@ -322,9 +326,9 @@ public class PuntoVentaController implements Refrescable {
             }
         });
         tipo.setMaxWidth(Double.MAX_VALUE);
-        clienteNombre.setPromptText("Cliente (opcional)");
-        clienteDocumento.setPromptText("DNI o RUC (opcional)");
-        observacion.setPromptText("Observación (opcional)");
+        clienteNombre.setPromptText(Mensajes.get("puntoVenta.clienteOpcional"));
+        clienteDocumento.setPromptText(Mensajes.get("puntoVenta.documentoOpcional"));
+        observacion.setPromptText(Mensajes.get("puntoVenta.observacionOpcional"));
         aplicaIgv.setSelected(true);
         incluyeIgv.setSelected(true);
         for (Label etiqueta : List.of(base, igv)) {
@@ -358,7 +362,7 @@ public class PuntoVentaController implements Refrescable {
         datos.add(observacion, 1, 1);
         datos.add(aplicaIgv, 0, 2);
         datos.add(incluyeIgv, 1, 2);
-        TitledPane comprobante = new TitledPane("Comprobante y cliente (opcional)", datos);
+        TitledPane comprobante = new TitledPane(Mensajes.get("puntoVenta.comprobanteYCliente"), datos);
         comprobante.setExpanded(false);
 
         Region espacio = new Region();
@@ -372,9 +376,9 @@ public class PuntoVentaController implements Refrescable {
         CalculadoraIgv.Totales t = CalculadoraIgv.calcular(
             carrito.stream().map(Linea::importe).toList(), aplicaIgv.isSelected(), incluyeIgv.isSelected(), tasaIgv
         );
-        base.setText("Base imponible: " + dinero(t.baseImponible()));
-        igv.setText("IGV: " + dinero(t.igv()));
-        total.setText("Total: " + dinero(t.total()));
+        base.setText(Mensajes.get("puntoVenta.baseImponible", dinero(t.baseImponible())));
+        igv.setText(Mensajes.get("puntoVenta.igv", dinero(t.igv())));
+        total.setText(Mensajes.get("puntoVenta.total", dinero(t.total())));
         cobrar.setDisable(carrito.isEmpty());
     }
 
@@ -399,11 +403,11 @@ public class PuntoVentaController implements Refrescable {
         observacion.clear();
         Alert dialogo = new Alert(Alert.AlertType.INFORMATION);
         dialogo.initOwner(ventana());
-        dialogo.setTitle("Venta registrada");
-        dialogo.setHeaderText("Venta " + venta.comprobante() + " registrada");
-        dialogo.setContentText("Total cobrado: " + dinero(venta.total()));
-        ButtonType imprimir = new ButtonType("Imprimir PDF", ButtonBar.ButtonData.LEFT);
-        dialogo.getButtonTypes().setAll(imprimir, new ButtonType("Nueva venta", ButtonBar.ButtonData.OK_DONE));
+        dialogo.setTitle(Mensajes.get("puntoVenta.ventaRegistrada"));
+        dialogo.setHeaderText(Mensajes.get("puntoVenta.ventaRegistradaTexto", venta.comprobante()));
+        dialogo.setContentText(Mensajes.get("puntoVenta.totalCobrado", dinero(venta.total())));
+        ButtonType imprimir = new ButtonType(Mensajes.get("puntoVenta.imprimirPdf"), ButtonBar.ButtonData.LEFT);
+        dialogo.getButtonTypes().setAll(imprimir, new ButtonType(Mensajes.get("puntoVenta.nuevaVenta"), ButtonBar.ButtonData.OK_DONE));
         dialogo.showAndWait().filter(boton -> boton == imprimir).ifPresent(boton ->
             VisorPdf.abrir(venta.comprobante(), () -> pdfService.generar(venta.id()), this::avisar)
         );

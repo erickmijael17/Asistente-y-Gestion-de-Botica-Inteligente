@@ -7,6 +7,7 @@ import com.botica.inteligente.producto.repository.ProductoRepository;
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.Textos;
 import java.util.List;
 import org.slf4j.Logger;
@@ -22,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CategoriaService {
 
     private static final Logger log = LoggerFactory.getLogger(CategoriaService.class);
-    private static final String SIN_PERMISO = "No tiene permisos para modificar categorías.";
     private static final int LIMITE_AUTOCOMPLETAR = 10;
 
     private final CategoriaRepository categoriaRepository;
@@ -58,7 +58,7 @@ public class CategoriaService {
 
     @Transactional
     public CategoriaResumen crear(CategoriaComando comando) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.categoria.sinPermiso"));
         String nombre = validarNombre(comando);
         if (categoriaRepository.existsByNombreIgnoreCase(nombre)) {
             throw nombreDuplicado();
@@ -72,7 +72,7 @@ public class CategoriaService {
 
     @Transactional
     public CategoriaResumen actualizar(Long id, CategoriaComando comando) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.categoria.sinPermiso"));
         Categoria categoria = buscar(id);
         String nombre = validarNombre(comando);
         if (categoriaRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
@@ -84,10 +84,10 @@ public class CategoriaService {
 
     @Transactional
     public CategoriaResumen cambiarEstado(Long id, boolean estado) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.categoria.sinPermiso"));
         Categoria categoria = buscar(id);
         if (!estado && productoRepository.existsByCategoriaIdAndEstadoTrue(id)) {
-            throw new NegocioException("No se puede desactivar: la categoría tiene productos activos.");
+            throw new NegocioException(Mensajes.get("error.categoria.tieneProductosActivos"));
         }
         categoria.setEstado(estado);
         return resumen(categoriaRepository.save(categoria));
@@ -95,7 +95,7 @@ public class CategoriaService {
 
     private Categoria buscar(Long id) {
         return categoriaRepository.findById(id)
-            .orElseThrow(() -> new NegocioException("No se encontró la categoría seleccionada."));
+            .orElseThrow(() -> new NegocioException(Mensajes.get("error.categoria.noEncontrada")));
     }
 
     private String validarNombre(CategoriaComando comando) {
@@ -108,7 +108,7 @@ public class CategoriaService {
     }
 
     private CampoInvalidoException nombreDuplicado() {
-        return new CampoInvalidoException("nombre", "Ya existe una categoría con ese nombre.");
+        return new CampoInvalidoException("nombre", Mensajes.get("error.categoria.nombreDuplicado"));
     }
 
     private CategoriaResumen resumen(Categoria categoria) {

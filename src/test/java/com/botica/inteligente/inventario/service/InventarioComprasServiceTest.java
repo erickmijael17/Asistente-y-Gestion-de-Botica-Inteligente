@@ -127,7 +127,7 @@ class InventarioComprasServiceTest {
     @Test
     void compraConIgvIncluidoCostealSinImpuesto() {
         compraService.registrar(new NuevaCompra(
-            RUC, "Distribuidora SAC", TipoDocumentoCompra.FACTURA, "F001-9", LocalDate.now(), true, true, null,
+            RUC, TipoDocumentoCompra.FACTURA, LocalDate.now(), true, true, null,
             List.of(linea(10, "11.80", "LOTE-A", 400))
         ));
 
@@ -149,24 +149,31 @@ class InventarioComprasServiceTest {
     }
 
     @Test
-    void compraValidaDocumentoRucFechaVencimientoYLineas() {
-        compraService.registrar(compra("F001-1", linea(5, "5.00", "LOTE-A", 400)));
-
-        assertEquals("numeroDocumento", assertThrows(CampoInvalidoException.class,
-            () -> compraService.registrar(compra("F001-1", linea(1, "5.00", "LOTE-B", 400)))).getCampo());
+    void compraValidaRucFechaVencimientoYLineas() {
         assertEquals("ruc", assertThrows(CampoInvalidoException.class, () -> compraService.registrar(
-            new NuevaCompra("123", "X", TipoDocumentoCompra.FACTURA, "F9", LocalDate.now(), false, false, null,
+            new NuevaCompra("123", TipoDocumentoCompra.FACTURA, LocalDate.now(), false, false, null,
                 List.of(linea(1, "5.00", "L", 400))))).getCampo());
         assertEquals("fechaDocumento", assertThrows(CampoInvalidoException.class, () -> compraService.registrar(
-            new NuevaCompra(RUC, "X", TipoDocumentoCompra.FACTURA, "F9", LocalDate.now().plusDays(1), false, false,
+            new NuevaCompra(RUC, TipoDocumentoCompra.FACTURA, LocalDate.now().plusDays(1), false, false,
                 null, List.of(linea(1, "5.00", "L", 400))))).getCampo());
         assertEquals("lineas", assertThrows(CampoInvalidoException.class,
             () -> compraService.registrar(compra("F001-5", linea(1, "5.00", "L", -1)))).getCampo());
         assertEquals("lineas", assertThrows(CampoInvalidoException.class,
             () -> compraService.registrar(compra("F001-6", linea(0, "5.00", "L", 400)))).getCampo());
         assertEquals("lineas", assertThrows(CampoInvalidoException.class, () -> compraService.registrar(
-            new NuevaCompra(RUC, "X", TipoDocumentoCompra.FACTURA, "F7", LocalDate.now(), false, false, null,
+            new NuevaCompra(RUC, TipoDocumentoCompra.FACTURA, LocalDate.now(), false, false, null,
                 List.of()))).getCampo());
+    }
+
+    @Test
+    void compraSinRucSeRegistraSinProveedor() {
+        CompraResumen resultado = compraService.registrar(new NuevaCompra(
+            null, TipoDocumentoCompra.FACTURA, LocalDate.now(), false, false, null,
+            List.of(linea(5, "5.00", "LOTE-A", 400))
+        ));
+
+        assertEquals(null, resultado.ruc());
+        assertEquals(null, resultado.proveedor());
     }
 
     @Test
@@ -306,9 +313,9 @@ class InventarioComprasServiceTest {
         assertEquals(0, new BigDecimal(esperado).compareTo(real), "esperado " + esperado + " pero fue " + real);
     }
 
-    private NuevaCompra compra(String documento, LineaCompra linea) {
+    private NuevaCompra compra(String documentoIgnorado, LineaCompra linea) {
         return new NuevaCompra(
-            RUC, "Distribuidora SAC", TipoDocumentoCompra.FACTURA, documento, LocalDate.now(), false, false, null,
+            RUC, TipoDocumentoCompra.FACTURA, LocalDate.now(), false, false, null,
             List.of(linea)
         );
     }

@@ -10,6 +10,7 @@ import com.botica.inteligente.producto.repository.ProductoRepository;
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.CalculadoraIgv;
 import com.botica.inteligente.shared.util.Textos;
 import com.botica.inteligente.usuario.repository.UsuarioRepository;
@@ -103,14 +104,14 @@ public class VentaService {
         sesionActual.exigirAutenticado();
         TipoComprobante tipo = nueva.tipoComprobante();
         if (tipo == null) {
-            throw new CampoInvalidoException("tipoComprobante", "Seleccione el tipo de comprobante.");
+            throw new CampoInvalidoException("tipoComprobante", Mensajes.get("error.venta.tipoComprobanteRequerido"));
         }
         String documento = Textos.opcional("clienteDocumento", "documento del cliente", nueva.clienteDocumento(), 15);
         if (documento != null && !DOCUMENTO_CLIENTE.matcher(documento).matches()) {
-            throw new CampoInvalidoException("clienteDocumento", "El documento debe ser un DNI (8 dígitos) o RUC (11 dígitos).");
+            throw new CampoInvalidoException("clienteDocumento", Mensajes.get("error.venta.documentoInvalido"));
         }
         if (nueva.lineas() == null || nueva.lineas().isEmpty()) {
-            throw new CampoInvalidoException("lineas", "Agregue al menos un producto a la venta.");
+            throw new CampoInvalidoException("lineas", Mensajes.get("error.venta.sinLineas"));
         }
 
         List<LineaCalculada> lineas = calcularLineas(nueva.lineas());
@@ -169,10 +170,10 @@ public class VentaService {
 
     @Transactional
     public VentaResumen anular(Long id) {
-        sesionActual.exigirOwner("Solo el propietario puede anular ventas.");
+        sesionActual.exigirOwner(Mensajes.get("error.venta.soloOwnerAnula"));
         Venta venta = buscarConDetalle(id);
         if (venta.getEstado() == EstadoVenta.ANULADA) {
-            throw new NegocioException("La venta ya está anulada.");
+            throw new NegocioException(Mensajes.get("error.venta.yaAnulada"));
         }
         Long usuarioId = sesionActual.usuarioAutenticado().orElseThrow().id();
         MovimientoContexto contexto = new MovimientoContexto(
@@ -202,13 +203,19 @@ public class VentaService {
             int item = i + 1;
             Producto producto = linea.productoId() == null ? null : productos.get(linea.productoId());
             if (producto == null) {
-                throw new CampoInvalidoException("lineas", "Línea " + item + ": el producto no existe.");
+                throw new CampoInvalidoException("lineas", Mensajes.get("error.venta.linea.productoNoExiste", String.valueOf(item)));
             }
             if (!Boolean.TRUE.equals(producto.getEstado())) {
-                throw new CampoInvalidoException("lineas", "Línea " + item + ": el producto " + producto.getNombreComercial() + " está inactivo.");
+                throw new CampoInvalidoException(
+                    "lineas",
+                    Mensajes.get("error.venta.linea.productoInactivo", String.valueOf(item), producto.getNombreComercial())
+                );
             }
             if (linea.cantidad() < 1 || linea.cantidad() > CANTIDAD_MAXIMA) {
-                throw new CampoInvalidoException("lineas", "Línea " + item + ": la cantidad debe estar entre 1 y " + CANTIDAD_MAXIMA + ".");
+                throw new CampoInvalidoException(
+                    "lineas",
+                    Mensajes.get("error.venta.linea.cantidadRango", String.valueOf(item), String.valueOf(CANTIDAD_MAXIMA))
+                );
             }
             BigDecimal precio = precioDeLinea(item, linea, producto);
             calculadas.add(new LineaCalculada(linea, producto, precio, CalculadoraIgv.importe(linea.cantidad(), precio)));
@@ -224,15 +231,15 @@ public class VentaService {
             return catalogo;
         }
         if (pedido.signum() <= 0) {
-            throw new CampoInvalidoException("lineas", "Línea " + item + ": el precio debe ser mayor a cero.");
+            throw new CampoInvalidoException("lineas", Mensajes.get("error.venta.linea.precioMayorACero", String.valueOf(item)));
         }
-        sesionActual.exigirOwner("Solo el propietario puede cambiar el precio de venta.");
+        sesionActual.exigirOwner(Mensajes.get("error.venta.soloOwnerCambiaPrecio"));
         return pedido.setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     private Venta buscarConDetalle(Long id) {
         return ventaRepository.buscarConDetalle(id)
-            .orElseThrow(() -> new NegocioException("No se encontró la venta seleccionada."));
+            .orElseThrow(() -> new NegocioException(Mensajes.get("error.venta.noEncontrada")));
     }
 
     private VentaResumen resumen(Venta v, boolean conDetalle) {

@@ -32,6 +32,9 @@ bin/
 .DS_Store
 Thumbs.db
 
+# Scaffold duplicado (no usar)
+/escritorio/
+
 # Environment
 .env
 application-local.yml

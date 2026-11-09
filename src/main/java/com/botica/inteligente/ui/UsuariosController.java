@@ -1,5 +1,6 @@
 package com.botica.inteligente.ui;
 
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.usuario.enums.Rol;
 import com.botica.inteligente.usuario.service.UsuarioResumen;
 import com.botica.inteligente.usuario.service.UsuarioService;
@@ -10,11 +11,13 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.util.StringConverter;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import org.springframework.context.annotation.Scope;
@@ -70,10 +73,12 @@ public class UsuariosController implements Refrescable {
             celda -> new ReadOnlyStringWrapper(celda.getValue().username())
         );
         rolColumn.setCellValueFactory(
-            celda -> new ReadOnlyStringWrapper(celda.getValue().rol().name())
+            celda -> new ReadOnlyStringWrapper(rolTexto(celda.getValue().rol()))
         );
         estadoColumn.setCellValueFactory(
-            celda -> new ReadOnlyStringWrapper(celda.getValue().estado() ? "Activo" : "Inactivo")
+            celda -> new ReadOnlyStringWrapper(celda.getValue().estado()
+                ? Mensajes.get("usuarios.estado.activo")
+                : Mensajes.get("usuarios.estado.inactivo"))
         );
         accionColumn.setCellValueFactory(celda -> new ReadOnlyObjectWrapper<>(celda.getValue()));
         accionColumn.setCellFactory(columna -> new TableCell<>() {
@@ -94,15 +99,39 @@ public class UsuariosController implements Refrescable {
                 if (empty || usuario == null) {
                     setGraphic(null);
                 } else {
-                    accionButton.setText(usuario.estado() ? "Dar de baja" : "Reactivar");
+                    accionButton.setText(usuario.estado()
+                        ? Mensajes.get("usuarios.accion.darBaja")
+                        : Mensajes.get("usuarios.accion.reactivar"));
                     accionButton.setDisable(procesando);
                     setGraphic(accionButton);
                 }
             }
         });
         rolCombo.setItems(FXCollections.observableArrayList(Rol.values()));
+        rolCombo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Rol rol) {
+                return rol == null ? "" : rolTexto(rol);
+            }
+
+            @Override
+            public Rol fromString(String texto) {
+                return rolCombo.getValue();
+            }
+        });
+        rolCombo.setCellFactory(lista -> new ListCell<>() {
+            @Override
+            protected void updateItem(Rol rol, boolean empty) {
+                super.updateItem(rol, empty);
+                setText(empty || rol == null ? null : rolTexto(rol));
+            }
+        });
         rolCombo.setValue(Rol.SELLER);
         refrescar();
+    }
+
+    private String rolTexto(Rol rol) {
+        return Mensajes.get("rol." + rol.name().toLowerCase());
     }
 
     @Override
@@ -112,7 +141,7 @@ public class UsuariosController implements Refrescable {
         }
         procesando = true;
         actualizarEstadoControles();
-        mensajeLabel.setText("Cargando usuarios…");
+        mensajeLabel.setText(Mensajes.get("usuarios.cargando"));
 
         Task<List<UsuarioResumen>> tarea = new Task<>() {
             @Override
@@ -138,7 +167,7 @@ public class UsuariosController implements Refrescable {
         }
         procesando = true;
         actualizarEstadoControles();
-        mensajeLabel.setText("Guardando usuario…");
+        mensajeLabel.setText(Mensajes.get("usuarios.guardando"));
         String username = usernameField.getText();
         String password = passwordField.getText();
         Rol rol = rolCombo.getValue();
@@ -152,7 +181,7 @@ public class UsuariosController implements Refrescable {
         tarea.setOnSucceeded(event -> {
             usernameField.clear();
             passwordField.clear();
-            mensajeLabel.setText("Usuario creado.");
+            mensajeLabel.setText(Mensajes.get("usuarios.creado"));
             procesando = false;
             actualizarEstadoControles();
             refrescar();
@@ -167,7 +196,7 @@ public class UsuariosController implements Refrescable {
         }
         procesando = true;
         actualizarEstadoControles();
-        mensajeLabel.setText("Actualizando usuario…");
+        mensajeLabel.setText(Mensajes.get("usuarios.actualizando"));
         Task<UsuarioResumen> tarea = new Task<>() {
             @Override
             protected UsuarioResumen call() {
@@ -175,7 +204,7 @@ public class UsuariosController implements Refrescable {
             }
         };
         tarea.setOnSucceeded(event -> {
-            mensajeLabel.setText("Estado actualizado.");
+            mensajeLabel.setText(Mensajes.get("usuarios.estadoActualizado"));
             procesando = false;
             actualizarEstadoControles();
             refrescar();
@@ -186,7 +215,7 @@ public class UsuariosController implements Refrescable {
 
     private void finalizarConError(String mensaje) {
         mensajeLabel.setText(mensaje == null || mensaje.isBlank()
-            ? "No se pudo completar la operación."
+            ? Mensajes.get("usuarios.errorGenerico")
             : mensaje);
         procesando = false;
         actualizarEstadoControles();

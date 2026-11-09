@@ -49,8 +49,8 @@ public class Compra extends AuditableEntity {
     @Column(nullable = false)
     private LocalDateTime fecha;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "proveedor_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proveedor_id")
     private Proveedor proveedor;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -60,9 +60,6 @@ public class Compra extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_documento", nullable = false, length = 20)
     private TipoDocumentoCompra tipoDocumento;
-
-    @Column(name = "numero_documento", nullable = false, length = 40)
-    private String numeroDocumento;
 
     @Column(name = "fecha_documento", nullable = false)
     private LocalDate fechaDocumento;

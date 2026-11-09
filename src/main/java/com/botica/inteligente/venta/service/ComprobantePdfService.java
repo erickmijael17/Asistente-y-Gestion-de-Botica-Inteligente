@@ -2,6 +2,7 @@ package com.botica.inteligente.venta.service;
 
 import com.botica.inteligente.config.EmpresaProperties;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.NumeroALetras;
 import com.botica.inteligente.venta.enums.EstadoVenta;
 import com.lowagie.text.Document;
@@ -52,14 +53,12 @@ public class ComprobantePdfService {
             agregarCliente(documento, venta);
             agregarItems(documento, venta);
             agregarTotales(documento, venta);
-            Paragraph pie = new Paragraph(
-                "Documento generado por Botica Inteligente. No incluye validación ante SUNAT.", PEQUENA
-            );
+            Paragraph pie = new Paragraph(Mensajes.get("comprobante.pie"), PEQUENA);
             pie.setSpacingBefore(24);
             pie.setAlignment(Element.ALIGN_CENTER);
             documento.add(pie);
         } catch (DocumentException error) {
-            throw new NegocioException("No se pudo generar el comprobante en PDF.");
+            throw new NegocioException(Mensajes.get("error.venta.pdfNoGenerado"));
         } finally {
             if (documento.isOpen()) {
                 documento.close();
@@ -74,13 +73,13 @@ public class ComprobantePdfService {
         PdfPCell emisor = sinBorde(new Phrase(empresa.getNombre() + "\n", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14)));
         StringBuilder datos = new StringBuilder();
         if (!empresa.getRuc().isBlank()) {
-            datos.append("RUC: ").append(empresa.getRuc()).append('\n');
+            datos.append(Mensajes.get("comprobante.ruc")).append(' ').append(empresa.getRuc()).append('\n');
         }
         if (!empresa.getDireccion().isBlank()) {
             datos.append(empresa.getDireccion()).append('\n');
         }
         if (!empresa.getTelefono().isBlank()) {
-            datos.append("Tel.: ").append(empresa.getTelefono());
+            datos.append(Mensajes.get("comprobante.telefono")).append(' ').append(empresa.getTelefono());
         }
         emisor.addElement(new Paragraph(datos.toString(), NORMAL));
         tabla.addCell(emisor);
@@ -95,7 +94,9 @@ public class ComprobantePdfService {
         comprobante.addElement(tipo);
         comprobante.addElement(numero);
         if (venta.estado() == EstadoVenta.ANULADA) {
-            Paragraph anulada = new Paragraph("ANULADO", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14));
+            Paragraph anulada = new Paragraph(
+                Mensajes.get("comprobante.anulado"), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14)
+            );
             anulada.setAlignment(Element.ALIGN_CENTER);
             comprobante.addElement(anulada);
         }
@@ -104,13 +105,13 @@ public class ComprobantePdfService {
     }
 
     private void agregarCliente(Document documento, VentaResumen venta) throws DocumentException {
-        String cliente = venta.clienteNombre() == null ? "CLIENTE VARIOS" : venta.clienteNombre();
+        String cliente = venta.clienteNombre() == null ? Mensajes.get("comprobante.clienteVarios") : venta.clienteNombre();
         String documentoCliente = venta.clienteDocumento() == null ? "-" : venta.clienteDocumento();
         Paragraph datos = new Paragraph(
-            "Fecha de emisión: " + FECHA_HORA.format(venta.fecha()) + "\n"
-                + "Cliente: " + cliente + "\n"
-                + "Documento: " + documentoCliente + "\n"
-                + "Atendido por: " + venta.vendedor(),
+            Mensajes.get("comprobante.fechaEmision") + " " + FECHA_HORA.format(venta.fecha()) + "\n"
+                + Mensajes.get("comprobante.cliente") + " " + cliente + "\n"
+                + Mensajes.get("comprobante.documento") + " " + documentoCliente + "\n"
+                + Mensajes.get("comprobante.atendidoPor") + " " + venta.vendedor(),
             NORMAL
         );
         datos.setSpacingBefore(16);
@@ -121,7 +122,10 @@ public class ComprobantePdfService {
     private void agregarItems(Document documento, VentaResumen venta) throws DocumentException {
         PdfPTable tabla = new PdfPTable(new float[] {1, 5, 1.5f, 1.5f});
         tabla.setWidthPercentage(100);
-        for (String titulo : new String[] {"Cant.", "Descripción", "P. unit.", "Importe"}) {
+        for (String titulo : new String[] {
+            Mensajes.get("comprobante.columna.cant"), Mensajes.get("comprobante.columna.descripcion"),
+            Mensajes.get("comprobante.columna.precioUnit"), Mensajes.get("comprobante.columna.importe")
+        }) {
             PdfPCell cabecera = new PdfPCell(new Phrase(titulo, NEGRITA));
             cabecera.setBackgroundColor(new java.awt.Color(230, 230, 230));
             cabecera.setPadding(5);
@@ -142,12 +146,12 @@ public class ComprobantePdfService {
         tabla.setHorizontalAlignment(Element.ALIGN_RIGHT);
         tabla.setSpacingBefore(10);
         if (venta.aplicaIgv()) {
-            tabla.addCell(celda("Op. gravada", Element.ALIGN_LEFT));
+            tabla.addCell(celda(Mensajes.get("comprobante.opGravada"), Element.ALIGN_LEFT));
             tabla.addCell(celda(dinero(venta.baseImponible()), Element.ALIGN_RIGHT));
-            tabla.addCell(celda("IGV", Element.ALIGN_LEFT));
+            tabla.addCell(celda(Mensajes.get("comprobante.igv"), Element.ALIGN_LEFT));
             tabla.addCell(celda(dinero(venta.igv()), Element.ALIGN_RIGHT));
         }
-        tabla.addCell(celdaNegrita("TOTAL"));
+        tabla.addCell(celdaNegrita(Mensajes.get("comprobante.total")));
         PdfPCell total = celdaNegrita(dinero(venta.total()));
         total.setHorizontalAlignment(Element.ALIGN_RIGHT);
         tabla.addCell(total);
@@ -157,7 +161,7 @@ public class ComprobantePdfService {
         letras.setSpacingBefore(10);
         documento.add(letras);
         if (venta.observacion() != null) {
-            documento.add(new Paragraph("Observación: " + venta.observacion(), PEQUENA));
+            documento.add(new Paragraph(Mensajes.get("comprobante.observacion") + " " + venta.observacion(), PEQUENA));
         }
     }
 

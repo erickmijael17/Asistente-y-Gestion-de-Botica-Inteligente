@@ -2,6 +2,7 @@ package com.botica.inteligente.ui;
 
 import atlantafx.base.theme.Styles;
 import com.botica.inteligente.security.SesionActual;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -95,14 +96,18 @@ public abstract class CatalogoController<R, F> implements Refrescable {
         boolean owner = sesionActual.esOwner();
         raiz.setAccessibleText(titulo());
 
-        buscador.setPromptText("Buscar…");
+        buscador.setPromptText(Mensajes.get("catalogo.buscar.prompt"));
         buscador.setPrefWidth(220);
         buscador.textProperty().addListener((obs, anterior, nuevo) -> {
             esperaBusqueda.setOnFinished(evento -> cargar(0));
             esperaBusqueda.playFromStart();
         });
-        filtroEstado.getItems().setAll("Todos", "Activos", "Inactivos");
-        filtroEstado.setValue("Activos");
+        filtroEstado.getItems().setAll(
+            Mensajes.get("catalogo.filtro.todos"),
+            Mensajes.get("catalogo.filtro.activos"),
+            Mensajes.get("catalogo.filtro.inactivos")
+        );
+        filtroEstado.setValue(Mensajes.get("catalogo.filtro.activos"));
         filtroEstado.setMinWidth(Region.USE_PREF_SIZE);
         filtroEstado.valueProperty().addListener((obs, anterior, nuevo) -> cargar(0));
 
@@ -121,9 +126,9 @@ public abstract class CatalogoController<R, F> implements Refrescable {
         }
 
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tabla.setPlaceholder(new Label("Sin resultados"));
+        tabla.setPlaceholder(new Label(Mensajes.get("catalogo.sinResultados")));
         configurarColumnas();
-        Tablas.aplicarIndicadores(tabla, "Estado");
+        Tablas.aplicarIndicadores(tabla, Mensajes.get("catalogo.columna.estado"));
         if (owner) {
             tabla.getColumns().add(columnaAcciones());
         }
@@ -164,12 +169,12 @@ public abstract class CatalogoController<R, F> implements Refrescable {
     }
 
     private TableColumn<R, R> columnaAcciones() {
-        TableColumn<R, R> columna = new TableColumn<>("Acciones");
+        TableColumn<R, R> columna = new TableColumn<>(Mensajes.get("catalogo.acciones"));
         columna.setPrefWidth(210);
         columna.setSortable(false);
         columna.setCellValueFactory(celda -> new ReadOnlyObjectWrapper<>(celda.getValue()));
         columna.setCellFactory(c -> new TableCell<>() {
-            private final Button editar = new Button("Editar");
+            private final Button editar = new Button(Mensajes.get("catalogo.editar"));
             private final Button alternar = new Button();
             private final HBox caja = new HBox(8, editar, alternar);
 
@@ -185,7 +190,9 @@ public abstract class CatalogoController<R, F> implements Refrescable {
                     setGraphic(null);
                     return;
                 }
-                alternar.setText(estaActivo(fila) ? "Desactivar" : "Activar");
+                alternar.setText(estaActivo(fila)
+                    ? Mensajes.get("catalogo.desactivar")
+                    : Mensajes.get("catalogo.activar"));
                 setGraphic(caja);
             }
         });
@@ -205,7 +212,9 @@ public abstract class CatalogoController<R, F> implements Refrescable {
             }
         };
         tarea.setOnSucceeded(evento -> {
-            avisar(nuevoEstado ? "Registro activado." : "Registro desactivado.");
+            avisar(nuevoEstado
+                ? Mensajes.get("catalogo.registroActivado")
+                : Mensajes.get("catalogo.registroDesactivado"));
             recargar();
         });
         tarea.setOnFailed(evento -> avisar(textoError(tarea.getException())));
@@ -215,14 +224,20 @@ public abstract class CatalogoController<R, F> implements Refrescable {
     private void cargar(int pagina) {
         paginaActual = Math.max(pagina, 0);
         long actual = ++solicitud;
-        Boolean estado = switch (filtroEstado.getValue() == null ? "Todos" : filtroEstado.getValue()) {
-            case "Activos" -> Boolean.TRUE;
-            case "Inactivos" -> Boolean.FALSE;
-            default -> null;
-        };
+        String valorFiltro = filtroEstado.getValue() == null
+            ? Mensajes.get("catalogo.filtro.todos")
+            : filtroEstado.getValue();
+        Boolean estado;
+        if (valorFiltro.equals(Mensajes.get("catalogo.filtro.activos"))) {
+            estado = Boolean.TRUE;
+        } else if (valorFiltro.equals(Mensajes.get("catalogo.filtro.inactivos"))) {
+            estado = Boolean.FALSE;
+        } else {
+            estado = null;
+        }
         F filtros = capturarFiltros(buscador.getText(), estado);
         Pageable pageable = PageRequest.of(paginaActual, TAMANO_PAGINA, orden());
-        mensaje.setText("Cargando…");
+        mensaje.setText(Mensajes.get("catalogo.cargando"));
 
         Task<Page<R>> tarea = new Task<>() {
             @Override
@@ -259,7 +274,7 @@ public abstract class CatalogoController<R, F> implements Refrescable {
      */
     protected void mostrarDialogo(String titulo, Formulario formulario, Supplier<Callable<String>> preparador) {
         DialogoFormulario.mostrar(ventana(), titulo, formulario, preparador, aviso -> {
-            avisar(aviso == null ? "Guardado correctamente." : aviso);
+            avisar(aviso == null ? Mensajes.get("catalogo.guardadoCorrecto") : aviso);
             recargar();
         });
     }

@@ -7,6 +7,7 @@ import com.botica.inteligente.producto.repository.ProductoRepository;
 import com.botica.inteligente.producto.service.ProductoFiltro;
 import com.botica.inteligente.producto.specification.ProductoSpecification;
 import com.botica.inteligente.security.SesionActual;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.Textos;
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -118,14 +119,11 @@ public class AsistenteService {
         sesionActual.exigirAutenticado();
         String limpia = Textos.limpiar(pregunta);
         if (limpia == null) {
-            return respuesta("Escriba una consulta: un síntoma, el nombre de un medicamento o un principio activo.", List.of());
+            return respuesta(Mensajes.get("asistente.consultaVacia"), List.of());
         }
         Consulta consulta = Consulta.de(limpia);
         if (consulta.directos().isEmpty()) {
-            return respuesta(
-                "No entendí la consulta. Pruebe con el nombre de un medicamento, un principio activo o un síntoma, "
-                    + "por ejemplo «pastillas para la fiebre».", List.of()
-            );
+            return respuesta(Mensajes.get("asistente.noEntendido"), List.of());
         }
 
         Map<Long, Long> stock = inventarioRepository.filas("").stream()
@@ -137,10 +135,7 @@ public class AsistenteService {
             .filter(candidato -> candidato.puntaje() > 0)
             .toList();
         if (candidatos.isEmpty()) {
-            return respuesta(
-                "No encontré productos en el catálogo relacionados con «" + limpia + "». Verifique el nombre o pruebe "
-                    + "con otro síntoma o principio activo.", List.of()
-            );
+            return respuesta(Mensajes.get("asistente.sinCoincidencias", limpia), List.of());
         }
 
         Candidato mejor = candidatos.stream().max(Comparator.comparingInt(Candidato::puntajeNombre)
@@ -175,14 +170,17 @@ public class AsistenteService {
             : mismas;
         List<Sugerencia> sugerencias = ordenar(lista).stream().limit(MAXIMO_SUGERENCIAS).map(this::sugerencia).toList();
         if (sugerencias.isEmpty()) {
-            return respuesta("No hay otros productos en el catálogo que sirvan como alternativa a " + producto.getNombreComercial() + ".", List.of());
+            return respuesta(Mensajes.get("asistente.sinAlternativas", producto.getNombreComercial()), List.of());
         }
         String criterio = mismas.isEmpty()
-            ? "con indicaciones relacionadas"
-            : "con el mismo principio activo (" + producto.getPrincipioActivo() + ")";
+            ? Mensajes.get("asistente.criterioIndicaciones")
+            : Mensajes.get("asistente.criterioPrincipioActivo", producto.getPrincipioActivo());
         return respuesta(
-            "Alternativas a " + producto.getNombreComercial() + " " + criterio + ": " + sugerencias.size()
-                + " opción(es), " + conStock(sugerencias) + ".", sugerencias
+            Mensajes.get(
+                "asistente.alternativasResumen",
+                producto.getNombreComercial(), criterio, String.valueOf(sugerencias.size()), conStock(sugerencias)
+            ),
+            sugerencias
         );
     }
 
@@ -198,10 +196,10 @@ public class AsistenteService {
         }
         texto.append(": ");
         texto.append(ficha.indicaciones() != null
-            ? "indicado para " + ficha.indicaciones() + "."
-            : "el catálogo no tiene indicaciones registradas para este producto.");
+            ? Mensajes.get("asistente.indicadoPara", ficha.indicaciones())
+            : Mensajes.get("asistente.sinIndicaciones"));
         if (ficha.requiereReceta()) {
-            texto.append(" Requiere receta médica.");
+            texto.append(' ').append(Mensajes.get("asistente.requiereRecetaSufijo"));
         }
         return respuesta(texto.toString(), List.of(ficha));
     }
@@ -209,20 +207,23 @@ public class AsistenteService {
     private RespuestaAsistente opciones(String pregunta, List<Candidato> candidatos) {
         List<Sugerencia> sugerencias = diversificar(ordenar(candidatos));
         return respuesta(
-            "Para «" + pregunta + "» pueden servir " + sugerencias.size() + " opción(es) del inventario, "
-                + conStock(sugerencias) + ". Son sugerencias con distinto principio activo: confirme con el paciente "
-                + "(alergias, embarazo, otros medicamentos) antes de entregar.",
+            Mensajes.get(
+                "asistente.opcionesResumen",
+                pregunta, String.valueOf(sugerencias.size()), conStock(sugerencias)
+            ),
             sugerencias
         );
     }
 
     private String conStock(List<Sugerencia> sugerencias) {
         long disponibles = sugerencias.stream().filter(Sugerencia::hayStock).count();
-        return disponibles == sugerencias.size() ? "todas con stock" : disponibles + " con stock disponible";
+        return disponibles == sugerencias.size()
+            ? Mensajes.get("asistente.todasConStock")
+            : Mensajes.get("asistente.conStockDisponible", String.valueOf(disponibles));
     }
 
     private RespuestaAsistente respuesta(String texto, List<Sugerencia> sugerencias) {
-        return new RespuestaAsistente(texto, sugerencias, RespuestaAsistente.AVISO_ORIENTATIVO);
+        return new RespuestaAsistente(texto, sugerencias, RespuestaAsistente.avisoOrientativo());
     }
 
     // ---------- puntuacion y orden ----------
@@ -304,7 +305,8 @@ public class AsistenteService {
         Producto p = c.producto();
         return new Sugerencia(
             p.getId(), p.getNombreComercial(), p.getNombreGenerico(), p.getPrincipioActivo(), p.getConcentracion(),
-            p.getPresentacion(), p.getLaboratorio().getNombre(), p.getCategoria().getNombre(), p.getPrecioVenta(),
+            p.getPresentacion(), p.getLaboratorio() == null ? null : p.getLaboratorio().getNombre(),
+            p.getCategoria().getNombre(), p.getPrecioVenta(),
             c.stock(), Boolean.TRUE.equals(p.getRequiereReceta()), p.getIndicacionesOficiales(),
             p.getContraindicaciones(), p.getAdvertencias(), p.getPrecauciones(), p.getViaAdministracion(),
             p.getCondicionesAlmacenamiento(), p.getFuenteInformacion(), p.getFechaActualizacionInformacion(), c.puntaje(),

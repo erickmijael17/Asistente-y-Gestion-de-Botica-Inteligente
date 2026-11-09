@@ -3,6 +3,7 @@ package com.botica.inteligente.ui;
 import atlantafx.base.theme.PrimerDark;
 import atlantafx.base.theme.PrimerLight;
 import com.botica.inteligente.security.SesionActual;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
@@ -70,11 +71,11 @@ public class MainController {
         });
         sesionActual.usuarioAutenticado().ifPresentOrElse(
             usuario -> usuarioActual.setText(usuario.nombreVisible() + " · " + usuario.rol()),
-            () -> usuarioActual.setText("Sesión no disponible")
+            () -> usuarioActual.setText(Mensajes.get("sesion.noDisponible"))
         );
         usuariosButton.setVisible(sesionActual.esOwner());
         usuariosButton.setManaged(sesionActual.esOwner());
-        mostrarVista("Inicio", "/view/dashboard-view.fxml");
+        mostrarVista(Mensajes.get("menu.inicio"), "/view/dashboard-view.fxml");
     }
 
     public void setAlCerrarSesion(Runnable accionCerrarSesion) {
@@ -83,47 +84,42 @@ public class MainController {
 
     @FXML
     private void mostrarDashboard() {
-        mostrarVista("Inicio", "/view/dashboard-view.fxml");
-    }
-
-    @FXML
-    private void mostrarAsistente() {
-        mostrarVista("Asistente", "/view/asistente-view.fxml");
+        mostrarVista(Mensajes.get("menu.inicio"), "/view/dashboard-view.fxml");
     }
 
     @FXML
     private void mostrarProductos() {
-        mostrarVista("Productos", "/view/productos-view.fxml");
+        mostrarVista(Mensajes.get("menu.productos"), "/view/productos-view.fxml");
     }
 
     @FXML
     private void mostrarCategorias() {
-        mostrarVista("Categorías", "/view/categorias-view.fxml");
+        mostrarVista(Mensajes.get("menu.categorias"), "/view/categorias-view.fxml");
     }
 
     @FXML
     private void mostrarLaboratorios() {
-        mostrarVista("Laboratorios", "/view/laboratorios-view.fxml");
+        mostrarVista(Mensajes.get("menu.laboratorios"), "/view/laboratorios-view.fxml");
     }
 
     @FXML
     private void mostrarInventario() {
-        mostrarVista("Inventario", "/view/inventario-view.fxml");
+        mostrarVista(Mensajes.get("menu.inventario"), "/view/inventario-view.fxml");
     }
 
     @FXML
     private void mostrarCompras() {
-        mostrarVista("Compras", "/view/compras-view.fxml");
+        mostrarVista(Mensajes.get("menu.compras"), "/view/compras-view.fxml");
     }
 
     @FXML
     private void mostrarPuntoVenta() {
-        mostrarVista("Punto de venta", "/view/punto-venta-view.fxml");
+        mostrarVista(Mensajes.get("puntoVenta.titulo"), "/view/punto-venta-view.fxml");
     }
 
     @FXML
     private void mostrarVentas() {
-        mostrarVista("Ventas", "/view/ventas-view.fxml");
+        mostrarVista(Mensajes.get("menu.ventas"), "/view/ventas-view.fxml");
     }
 
     @FXML
@@ -131,11 +127,11 @@ public class MainController {
         if (!sesionActual.esOwner()) {
             notificador.mostrar(
                 areaContenido.getScene() == null ? null : areaContenido.getScene().getWindow(),
-                "No tiene permisos para gestionar usuarios"
+                Mensajes.get("usuarios.sinPermiso")
             );
             return;
         }
-        mostrarVista("Usuarios", "/view/usuarios-view.fxml");
+        mostrarVista(Mensajes.get("menu.usuarios"), "/view/usuarios-view.fxml");
     }
 
     @FXML
@@ -158,7 +154,9 @@ public class MainController {
         Window ventana = areaContenido.getScene() == null
             ? null
             : areaContenido.getScene().getWindow();
-        notificador.mostrar(ventana, temaOscuro ? "Tema oscuro activado" : "Tema claro activado");
+        notificador.mostrar(ventana, temaOscuro
+            ? Mensajes.get("tema.oscuro.activado")
+            : Mensajes.get("tema.claro.activado"));
     }
 
     private void mostrarVista(String titulo, String ruta) {
@@ -171,6 +169,7 @@ public class MainController {
                 }
 
                 FXMLLoader loader = new FXMLLoader(recurso);
+                loader.setResources(Mensajes.bundleActual());
                 loader.setControllerFactory(applicationContext::getBean);
                 Parent raiz = loader.load();
                 vista = new VistaEnCache(raiz, loader.getController());
@@ -188,7 +187,7 @@ public class MainController {
             log.error("No fue posible cargar la vista {}", ruta, exception);
             notificador.mostrar(
                 areaContenido.getScene() == null ? null : areaContenido.getScene().getWindow(),
-                "No se pudo abrir la vista solicitada"
+                Mensajes.get("main.error.vista")
             );
         }
     }

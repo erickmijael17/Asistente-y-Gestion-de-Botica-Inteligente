@@ -3,6 +3,7 @@ package com.botica.inteligente.producto.specification;
 import com.botica.inteligente.producto.entity.Producto;
 import com.botica.inteligente.producto.service.ProductoFiltro;
 import com.botica.inteligente.shared.util.Textos;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +18,7 @@ public final class ProductoSpecification {
         return (root, query, cb) -> {
             if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
                 root.fetch("categoria");
-                root.fetch("laboratorio");
+                root.fetch("laboratorio", JoinType.LEFT);
             }
             List<Predicate> predicados = new ArrayList<>();
             String patron = Textos.patronBusqueda(filtro.texto());

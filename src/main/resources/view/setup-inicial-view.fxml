@@ -7,15 +7,15 @@
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.botica.inteligente.ui.SetupInicialController" styleClass="auth-screen">
     <VBox spacing="14" styleClass="auth-card">
-        <Label text="Configuración inicial" styleClass="auth-title" />
-        <Label text="Crea la cuenta OWNER para administrar la botica." wrapText="true" />
-        <Label text="Usuario" />
-        <TextField fx:id="usernameField" promptText="Nombre de usuario" />
-        <Label text="Contraseña" />
-        <PasswordField fx:id="passwordField" promptText="Mínimo 8 caracteres" />
-        <Label text="Confirmar contraseña" />
-        <PasswordField fx:id="confirmacionField" promptText="Repite la contraseña" />
+        <Label text="%setup.titulo" styleClass="auth-title" />
+        <Label text="%setup.subtitulo" wrapText="true" />
+        <Label text="%setup.usuario" />
+        <TextField fx:id="usernameField" promptText="%setup.usuario.prompt" />
+        <Label text="%setup.password" />
+        <PasswordField fx:id="passwordField" promptText="%setup.password.prompt" />
+        <Label text="%setup.confirmar" />
+        <PasswordField fx:id="confirmacionField" promptText="%setup.confirmar.prompt" />
         <Label fx:id="errorLabel" wrapText="true" styleClass="auth-error" />
-        <Button fx:id="crearOwnerButton" text="Crear OWNER" onAction="#crearOwner" maxWidth="Infinity" />
+        <Button fx:id="crearOwnerButton" text="%setup.crear" onAction="#crearOwner" maxWidth="Infinity" />
     </VBox>
 </VBox>

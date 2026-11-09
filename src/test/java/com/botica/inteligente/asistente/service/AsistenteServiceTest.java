@@ -103,7 +103,7 @@ class AsistenteServiceTest {
         // mismo puntaje y con stock: primero el mas barato; el paracetamol repetido y sin stock va al final
         assertEquals(List.of("Ibuprofeno", "Panadol", "Paracetamol Genérico"), nombres);
         assertFalse(nombres.contains("Loratadina"));
-        assertEquals(RespuestaAsistente.AVISO_ORIENTATIVO, respuesta.aviso());
+        assertEquals(RespuestaAsistente.avisoOrientativo(), respuesta.aviso());
     }
 
     @Test
@@ -164,7 +164,7 @@ class AsistenteServiceTest {
 
         assertTrue(respuesta.sugerencias().isEmpty());
         assertTrue(respuesta.texto().contains("No encontré"));
-        assertEquals(RespuestaAsistente.AVISO_ORIENTATIVO, respuesta.aviso());
+        assertEquals(RespuestaAsistente.avisoOrientativo(), respuesta.aviso());
     }
 
     @Test

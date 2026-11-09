@@ -2,6 +2,7 @@ package com.botica.inteligente.usuario.service;
 
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.usuario.entity.Usuario;
 import com.botica.inteligente.usuario.enums.Rol;
 import com.botica.inteligente.usuario.repository.UsuarioRepository;
@@ -14,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UsuarioService {
 
     private static final int LONGITUD_MINIMA_PASSWORD = 8;
-    private static final String MENSAJE_SIN_PERMISO = "No tiene permisos para gestionar usuarios.";
 
     private final UsuarioRepository usuarioRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -49,7 +49,7 @@ public class UsuarioService {
         String usernameNormalizado = validarUsername(username);
         validarPassword(password);
         if (rol == null) {
-            throw new NegocioException("Seleccione un rol para el usuario.");
+            throw new NegocioException(Mensajes.get("error.usuario.rolRequerido"));
         }
         validarUsernameUnico(usernameNormalizado);
 
@@ -62,10 +62,10 @@ public class UsuarioService {
         String usernameNormalizado = validarUsername(username);
         validarPassword(password);
         if (!password.equals(confirmacion)) {
-            throw new NegocioException("Las contraseñas no coinciden.");
+            throw new NegocioException(Mensajes.get("error.usuario.passwordsNoCoinciden"));
         }
         if (usuarioRepository.existsByRoles(Rol.OWNER)) {
-            throw new NegocioException("La configuración inicial ya fue completada.");
+            throw new NegocioException(Mensajes.get("error.usuario.setupYaCompletado"));
         }
         validarUsernameUnico(usernameNormalizado);
 
@@ -77,11 +77,11 @@ public class UsuarioService {
     public UsuarioResumen cambiarEstado(Long id, boolean estado) {
         validarPermisoOwner();
         Usuario usuario = usuarioRepository.findById(id)
-            .orElseThrow(() -> new NegocioException("No se encontró el usuario seleccionado."));
+            .orElseThrow(() -> new NegocioException(Mensajes.get("error.usuario.noEncontrado")));
 
         if (!estado && Boolean.TRUE.equals(usuario.getEstado()) && usuario.getRoles() == Rol.OWNER
             && usuarioRepository.countByRolesAndEstado(Rol.OWNER, true) <= 1) {
-            throw new NegocioException("Debe mantenerse al menos un OWNER activo.");
+            throw new NegocioException(Mensajes.get("error.usuario.ultimoOwner"));
         }
 
         usuario.setEstado(estado);
@@ -100,29 +100,29 @@ public class UsuarioService {
     private String validarUsername(String username) {
         String usernameNormalizado = username == null ? "" : username.trim();
         if (usernameNormalizado.isBlank()) {
-            throw new NegocioException("Ingrese un nombre de usuario.");
+            throw new NegocioException(Mensajes.get("error.usuario.nombreRequerido"));
         }
         if (usernameNormalizado.length() > 100) {
-            throw new NegocioException("El nombre de usuario no puede superar 100 caracteres.");
+            throw new NegocioException(Mensajes.get("error.usuario.nombreDemasiadoLargo"));
         }
         return usernameNormalizado;
     }
 
     private void validarPassword(String password) {
         if (password == null || password.length() < LONGITUD_MINIMA_PASSWORD) {
-            throw new NegocioException("La contraseña debe tener al menos 8 caracteres.");
+            throw new NegocioException(Mensajes.get("error.usuario.passwordCorta"));
         }
     }
 
     private void validarUsernameUnico(String username) {
         if (usuarioRepository.existsByUsername(username)) {
-            throw new NegocioException("El nombre de usuario ya está en uso.");
+            throw new NegocioException(Mensajes.get("error.usuario.nombreEnUso"));
         }
     }
 
     private void validarPermisoOwner() {
         if (!sesionActual.esOwner()) {
-            throw new NegocioException(MENSAJE_SIN_PERMISO);
+            throw new NegocioException(Mensajes.get("error.usuario.sinPermiso"));
         }
     }
 

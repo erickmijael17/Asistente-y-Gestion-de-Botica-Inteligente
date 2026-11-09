@@ -2,6 +2,7 @@ package com.botica.inteligente.ui;
 
 import atlantafx.base.theme.Styles;
 import com.botica.inteligente.security.SesionActual;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.venta.enums.EstadoVenta;
 import com.botica.inteligente.venta.service.ComprobantePdfService;
 import com.botica.inteligente.venta.service.VentaResumen;
@@ -77,17 +78,19 @@ public class VentasController implements Refrescable {
         hoy.getStyleClass().add("muted-text");
         mensaje.getStyleClass().add("muted-text");
 
-        buscador.setPromptText("Buscar por comprobante, cliente o documento…");
+        buscador.setPromptText(Mensajes.get("venta.buscar.prompt"));
         buscador.setPrefWidth(300);
         buscador.textProperty().addListener((obs, anterior, nuevo) -> {
             esperaBusqueda.setOnFinished(evento -> cargar(0));
             esperaBusqueda.playFromStart();
         });
-        filtroEstado.getItems().setAll("Todas", "Emitidas", "Anuladas");
-        filtroEstado.setValue("Todas");
+        filtroEstado.getItems().setAll(
+            Mensajes.get("compra.filtro.todas"), Mensajes.get("venta.filtro.emitidas"), Mensajes.get("compra.filtro.anuladas")
+        );
+        filtroEstado.setValue(Mensajes.get("compra.filtro.todas"));
         filtroEstado.valueProperty().addListener((obs, anterior, nuevo) -> cargar(0));
-        desde.setPromptText("Desde");
-        hasta.setPromptText("Hasta");
+        desde.setPromptText(Mensajes.get("compra.desde"));
+        hasta.setPromptText(Mensajes.get("compra.hasta"));
         desde.valueProperty().addListener((obs, anterior, nuevo) -> cargar(0));
         hasta.valueProperty().addListener((obs, anterior, nuevo) -> cargar(0));
         Region espacio = new Region();
@@ -96,15 +99,17 @@ public class VentasController implements Refrescable {
         barra.setAlignment(Pos.CENTER_LEFT);
 
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tabla.setPlaceholder(new Label("Sin ventas registradas"));
-        agregar(tabla, "Comprobante", 130, VentaResumen::comprobante);
-        agregar(tabla, "Fecha", 130, v -> FECHA_HORA.format(v.fecha()));
-        agregar(tabla, "Cliente", 180, v -> v.clienteNombre() == null ? "—" : v.clienteNombre());
-        agregar(tabla, "Vendedor", 110, VentaResumen::vendedor);
-        agregar(tabla, "Total", 90, v -> "S/ " + v.total());
-        agregar(tabla, "Estado", 90, v -> v.estado() == EstadoVenta.EMITIDA ? "Emitida" : "Anulada");
+        tabla.setPlaceholder(new Label(Mensajes.get("venta.sinRegistros")));
+        agregar(tabla, Mensajes.get("venta.columna.comprobante"), 130, VentaResumen::comprobante);
+        agregar(tabla, Mensajes.get("inventario.columna.fecha"), 130, v -> FECHA_HORA.format(v.fecha()));
+        agregar(tabla, Mensajes.get("venta.columna.cliente"), 180, v -> v.clienteNombre() == null ? "—" : v.clienteNombre());
+        agregar(tabla, Mensajes.get("venta.columna.vendedor"), 110, VentaResumen::vendedor);
+        agregar(tabla, Mensajes.get("compra.columna.total"), 90, v -> "S/ " + v.total());
+        agregar(tabla, Mensajes.get("catalogo.columna.estado"), 90, v -> v.estado() == EstadoVenta.EMITIDA
+            ? Mensajes.get("venta.estado.emitida")
+            : Mensajes.get("compra.estado.anulada"));
         tabla.getColumns().add(columnaAcciones());
-        Tablas.aplicarIndicadores(tabla, "Estado");
+        Tablas.aplicarIndicadores(tabla, Mensajes.get("catalogo.columna.estado"));
         VBox.setVgrow(tabla, Priority.ALWAYS);
 
         raiz.getChildren().setAll(hoy, barra, mensaje, tabla, paginador);
@@ -115,7 +120,7 @@ public class VentasController implements Refrescable {
         cargar(paginaActual);
         Fondo.ejecutar(
             () -> ventaService.totalEmitido(LocalDate.now(), LocalDate.now()),
-            total -> hoy.setText("Vendido hoy: S/ " + total.setScale(2, java.math.RoundingMode.HALF_UP)),
+            total -> hoy.setText(Mensajes.get("venta.vendidoHoy", total.setScale(2, java.math.RoundingMode.HALF_UP).toString())),
             error -> hoy.setText("")
         );
     }
@@ -124,15 +129,19 @@ public class VentasController implements Refrescable {
         paginaActual = Math.max(pagina, 0);
         long actual = ++solicitud;
         String texto = buscador.getText();
-        EstadoVenta estado = switch (filtroEstado.getValue() == null ? "Todas" : filtroEstado.getValue()) {
-            case "Emitidas" -> EstadoVenta.EMITIDA;
-            case "Anuladas" -> EstadoVenta.ANULADA;
-            default -> null;
-        };
+        String valorFiltro = filtroEstado.getValue() == null ? Mensajes.get("compra.filtro.todas") : filtroEstado.getValue();
+        EstadoVenta estado;
+        if (valorFiltro.equals(Mensajes.get("venta.filtro.emitidas"))) {
+            estado = EstadoVenta.EMITIDA;
+        } else if (valorFiltro.equals(Mensajes.get("compra.filtro.anuladas"))) {
+            estado = EstadoVenta.ANULADA;
+        } else {
+            estado = null;
+        }
         LocalDate fechaDesde = desde.getValue();
         LocalDate fechaHasta = hasta.getValue();
         PageRequest pageable = PageRequest.of(paginaActual, TAMANO_PAGINA, Sort.by("fecha").descending());
-        mensaje.setText("Cargando…");
+        mensaje.setText(Mensajes.get("catalogo.cargando"));
         Fondo.ejecutar(
             () -> ventaService.listar(texto, estado, fechaDesde, fechaHasta, pageable),
             resultado -> {
@@ -157,14 +166,14 @@ public class VentasController implements Refrescable {
 
     private TableColumn<VentaResumen, VentaResumen> columnaAcciones() {
         boolean owner = sesionActual.esOwner();
-        TableColumn<VentaResumen, VentaResumen> columna = new TableColumn<>("Acciones");
+        TableColumn<VentaResumen, VentaResumen> columna = new TableColumn<>(Mensajes.get("catalogo.acciones"));
         columna.setPrefWidth(250);
         columna.setSortable(false);
         columna.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue()));
         columna.setCellFactory(c -> new TableCell<>() {
-            private final Button detalle = new Button("Detalle");
+            private final Button detalle = new Button(Mensajes.get("inventario.columna.detalle"));
             private final Button pdf = new Button("PDF");
-            private final Button anular = new Button("Anular");
+            private final Button anular = new Button(Mensajes.get("compra.boton.anular"));
             private final HBox caja = new HBox(8, detalle, pdf, anular);
 
             {
@@ -205,27 +214,28 @@ public class VentasController implements Refrescable {
         TableView<VentaResumen.Detalle> lineas = new TableView<>();
         lineas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         lineas.setPrefHeight(240);
-        agregar(lineas, "Producto", 260, d -> d.codigoProducto() + " · " + d.nombreProducto());
-        agregar(lineas, "Cant.", 60, d -> String.valueOf(d.cantidad()));
-        agregar(lineas, "Precio", 80, d -> d.precioUnitario().toPlainString());
-        agregar(lineas, "Importe", 90, d -> d.importe().toPlainString());
+        agregar(lineas, Mensajes.get("producto.columna.producto"), 260, d -> d.codigoProducto() + " · " + d.nombreProducto());
+        agregar(lineas, Mensajes.get("compra.columna.cant"), 60, d -> String.valueOf(d.cantidad()));
+        agregar(lineas, Mensajes.get("venta.columna.precio"), 80, d -> d.precioUnitario().toPlainString());
+        agregar(lineas, Mensajes.get("compra.columna.importe"), 90, d -> d.importe().toPlainString());
         lineas.getItems().setAll(venta.detalles());
 
         Label cabecera = new Label(
             venta.tipoComprobante().etiqueta() + " " + venta.comprobante() + " · " + FECHA_HORA.format(venta.fecha())
-                + "\nCliente: " + (venta.clienteNombre() == null ? "—" : venta.clienteNombre())
-                + " · Vendedor: " + venta.vendedor()
+                + "\n" + Mensajes.get("venta.cliente") + ": " + (venta.clienteNombre() == null ? "—" : venta.clienteNombre())
+                + " · " + Mensajes.get("venta.columna.vendedor") + ": " + venta.vendedor()
         );
-        Label totales = new Label(
-            "Base S/ " + venta.baseImponible() + " · IGV S/ " + venta.igv() + " · Total S/ " + venta.total()
-        );
+        Label totales = new Label(Mensajes.get(
+            "compra.totales", venta.baseImponible().toString(), venta.igv().toString(), venta.total().toString()
+        ));
         totales.getStyleClass().add(Styles.TEXT_BOLD);
         VBox contenido = new VBox(10, cabecera, lineas, totales);
         contenido.setPrefWidth(620);
         Dialog<Void> dialogo = new Dialog<>();
         dialogo.initOwner(ventana());
-        dialogo.setTitle("Venta " + venta.comprobante());
-        dialogo.setHeaderText("Venta " + venta.comprobante() + (venta.estado() == EstadoVenta.ANULADA ? " (ANULADA)" : ""));
+        dialogo.setTitle(Mensajes.get("venta.dialogo.titulo", venta.comprobante()));
+        dialogo.setHeaderText(Mensajes.get("venta.dialogo.titulo", venta.comprobante())
+            + (venta.estado() == EstadoVenta.ANULADA ? " (" + Mensajes.get("compra.estado.anuladaMayus") + ")" : ""));
         dialogo.getDialogPane().setContent(contenido);
         dialogo.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
         dialogo.show();
@@ -237,15 +247,15 @@ public class VentasController implements Refrescable {
         }
         Alert alerta = new Alert(
             Alert.AlertType.CONFIRMATION,
-            "Se devolverá el stock de la venta " + venta.comprobante() + ". ¿Desea anularla?",
+            Mensajes.get("venta.confirmarAnulacion", venta.comprobante()),
             ButtonType.YES, ButtonType.NO
         );
         alerta.initOwner(ventana());
-        alerta.setHeaderText("Anular venta");
+        alerta.setHeaderText(Mensajes.get("venta.anularTitulo"));
         alerta.showAndWait().filter(boton -> boton == ButtonType.YES).ifPresent(boton -> Fondo.ejecutar(
             () -> ventaService.anular(venta.id()),
             anulada -> {
-                avisar("Venta " + anulada.comprobante() + " anulada.");
+                avisar(Mensajes.get("venta.anulada", anulada.comprobante()));
                 refrescar();
             },
             error -> avisar(DialogoFormulario.textoError(error))

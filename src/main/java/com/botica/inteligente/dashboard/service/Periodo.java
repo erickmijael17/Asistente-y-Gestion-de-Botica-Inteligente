@@ -1,22 +1,23 @@
 package com.botica.inteligente.dashboard.service;
 
+import com.botica.inteligente.shared.i18n.Mensajes;
 import java.time.LocalDate;
 
 public enum Periodo {
-    HOY("Hoy"),
-    ULTIMOS_7("Últimos 7 días"),
-    ULTIMOS_30("Últimos 30 días"),
-    ESTE_MES("Este mes"),
-    ESTE_ANIO("Este año");
+    HOY("periodo.hoy"),
+    ULTIMOS_7("periodo.ultimos7"),
+    ULTIMOS_30("periodo.ultimos30"),
+    ESTE_MES("periodo.esteMes"),
+    ESTE_ANIO("periodo.esteAnio");
 
-    private final String etiqueta;
+    private final String clave;
 
-    Periodo(String etiqueta) {
-        this.etiqueta = etiqueta;
+    Periodo(String clave) {
+        this.clave = clave;
     }
 
     public String etiqueta() {
-        return etiqueta;
+        return Mensajes.get(clave);
     }
 
     public LocalDate desde(LocalDate hoy) {

@@ -13,42 +13,39 @@
     <left>
         <VBox fx:id="barraLateral" spacing="6" styleClass="sidebar">
             <VBox spacing="3" styleClass="brand">
-                <Label text="BOTICA" styleClass="brand-title" />
-                <Label text="Inteligente" styleClass="brand-subtitle" />
+                <Label text="%main.brand.titulo" styleClass="brand-title" />
+                <Label text="%main.brand.subtitulo" styleClass="brand-subtitle" />
             </VBox>
             <Separator />
-            <Button text="Inicio" userData="/view/dashboard-view.fxml" onAction="#mostrarDashboard" maxWidth="Infinity" styleClass="navigation-button">
+            <Button text="%menu.inicio" userData="/view/dashboard-view.fxml" onAction="#mostrarDashboard" maxWidth="Infinity" styleClass="navigation-button">
                 <graphic><FontIcon iconLiteral="fth-home" /></graphic>
             </Button>
-            <Button text="Asistente" userData="/view/asistente-view.fxml" onAction="#mostrarAsistente" maxWidth="Infinity" styleClass="navigation-button">
-                <graphic><FontIcon iconLiteral="fth-message-circle" /></graphic>
-            </Button>
-            <Button text="Productos" userData="/view/productos-view.fxml" onAction="#mostrarProductos" maxWidth="Infinity" styleClass="navigation-button">
-                <graphic><FontIcon iconLiteral="fth-package" /></graphic>
-            </Button>
-            <Button text="Categorías" userData="/view/categorias-view.fxml" onAction="#mostrarCategorias" maxWidth="Infinity" styleClass="navigation-button">
-                <graphic><FontIcon iconLiteral="fth-tag" /></graphic>
-            </Button>
-            <Button text="Laboratorios" userData="/view/laboratorios-view.fxml" onAction="#mostrarLaboratorios" maxWidth="Infinity" styleClass="navigation-button">
-                <graphic><FontIcon iconLiteral="fth-layers" /></graphic>
-            </Button>
-            <Button text="Inventario" userData="/view/inventario-view.fxml" onAction="#mostrarInventario" maxWidth="Infinity" styleClass="navigation-button">
-                <graphic><FontIcon iconLiteral="fth-archive" /></graphic>
-            </Button>
-            <Button text="Compras" userData="/view/compras-view.fxml" onAction="#mostrarCompras" maxWidth="Infinity" styleClass="navigation-button">
-                <graphic><FontIcon iconLiteral="fth-truck" /></graphic>
-            </Button>
-            <Button text="Vender" userData="/view/punto-venta-view.fxml" onAction="#mostrarPuntoVenta" maxWidth="Infinity" styleClass="navigation-button">
+            <Button text="%menu.vender" userData="/view/punto-venta-view.fxml" onAction="#mostrarPuntoVenta" maxWidth="Infinity" styleClass="navigation-button">
                 <graphic><FontIcon iconLiteral="fth-shopping-cart" /></graphic>
             </Button>
-            <Button text="Ventas" userData="/view/ventas-view.fxml" onAction="#mostrarVentas" maxWidth="Infinity" styleClass="navigation-button">
+            <Button text="%menu.productos" userData="/view/productos-view.fxml" onAction="#mostrarProductos" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-package" /></graphic>
+            </Button>
+            <Button text="%menu.categorias" userData="/view/categorias-view.fxml" onAction="#mostrarCategorias" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-tag" /></graphic>
+            </Button>
+            <Button text="%menu.laboratorios" userData="/view/laboratorios-view.fxml" onAction="#mostrarLaboratorios" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-layers" /></graphic>
+            </Button>
+            <Button text="%menu.ventas" userData="/view/ventas-view.fxml" onAction="#mostrarVentas" maxWidth="Infinity" styleClass="navigation-button">
                 <graphic><FontIcon iconLiteral="fth-file-text" /></graphic>
             </Button>
-            <Button fx:id="usuariosButton" text="Usuarios" userData="/view/usuarios-view.fxml" onAction="#mostrarUsuarios" maxWidth="Infinity" styleClass="navigation-button">
+            <Button text="%menu.inventario" userData="/view/inventario-view.fxml" onAction="#mostrarInventario" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-archive" /></graphic>
+            </Button>
+            <Button text="%menu.compras" userData="/view/compras-view.fxml" onAction="#mostrarCompras" maxWidth="Infinity" styleClass="navigation-button">
+                <graphic><FontIcon iconLiteral="fth-truck" /></graphic>
+            </Button>
+            <Button fx:id="usuariosButton" text="%menu.usuarios" userData="/view/usuarios-view.fxml" onAction="#mostrarUsuarios" maxWidth="Infinity" styleClass="navigation-button">
                 <graphic><FontIcon iconLiteral="fth-users" /></graphic>
             </Button>
             <Region VBox.vgrow="ALWAYS" />
-            <Button text="Cambiar tema" onAction="#alternarTema" maxWidth="Infinity" styleClass="theme-button">
+            <Button text="%menu.tema" onAction="#alternarTema" maxWidth="Infinity" styleClass="theme-button">
                 <graphic><FontIcon iconLiteral="fth-moon" /></graphic>
             </Button>
         </VBox>
@@ -57,13 +54,13 @@
         <VBox spacing="20" styleClass="main-content">
             <HBox alignment="CENTER_LEFT" styleClass="page-header">
                 <VBox spacing="4">
-                    <Label text="GESTIÓN DE BOTICA" styleClass="eyebrow" />
-                    <Label fx:id="tituloVista" text="Inicio" styleClass="page-title" />
+                    <Label text="%menu.eyebrow" styleClass="eyebrow" />
+                    <Label fx:id="tituloVista" text="%menu.inicio" styleClass="page-title" />
                 </VBox>
                 <Region HBox.hgrow="ALWAYS" />
                 <HBox spacing="12" alignment="CENTER_RIGHT">
                     <Label fx:id="usuarioActual" text="" styleClass="user-session-label" />
-                    <Button text="Cerrar sesión" onAction="#cerrarSesion">
+                    <Button text="%menu.cerrarSesion" onAction="#cerrarSesion">
                         <graphic><FontIcon iconLiteral="fth-log-out" /></graphic>
                     </Button>
                 </HBox>

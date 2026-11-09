@@ -7,6 +7,7 @@ import com.botica.inteligente.inventario.service.KardexFila;
 import com.botica.inteligente.inventario.service.LoteResumen;
 import com.botica.inteligente.inventario.service.ResumenInventario;
 import com.botica.inteligente.security.SesionActual;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Function;
@@ -78,8 +79,8 @@ public class InventarioController implements Refrescable {
         resumenLabel.getStyleClass().add("muted-text");
         mensaje.getStyleClass().add("muted-text");
 
-        Tab existencias = new Tab("Existencias", construirExistencias());
-        Tab vencimientos = new Tab("Vencimientos", construirVencimientos());
+        Tab existencias = new Tab(Mensajes.get("inventario.tab.existencias"), construirExistencias());
+        Tab vencimientos = new Tab(Mensajes.get("inventario.tab.vencimientos"), construirVencimientos());
         existencias.setClosable(false);
         vencimientos.setClosable(false);
         TabPane pestanas = new TabPane(existencias, vencimientos);
@@ -97,36 +98,43 @@ public class InventarioController implements Refrescable {
     // ---------- existencias ----------
 
     private VBox construirExistencias() {
-        buscador.setPromptText("Buscar por nombre, código o código de barras…");
+        buscador.setPromptText(Mensajes.get("inventario.buscar.prompt"));
         buscador.setPrefWidth(320);
         buscador.textProperty().addListener((obs, anterior, nuevo) -> {
             esperaBusqueda.setOnFinished(evento -> cargarExistencias(0));
             esperaBusqueda.playFromStart();
         });
-        filtroStock.getItems().setAll("Todos", "Disponible", "Stock bajo", "Sin stock");
-        filtroStock.setValue("Todos");
+        filtroStock.getItems().setAll(
+            Mensajes.get("catalogo.filtro.todos"),
+            Mensajes.get("inventario.filtro.disponible"),
+            Mensajes.get("inventario.filtro.stockBajo"),
+            Mensajes.get("inventario.filtro.sinStock")
+        );
+        filtroStock.setValue(Mensajes.get("catalogo.filtro.todos"));
         filtroStock.valueProperty().addListener((obs, anterior, nuevo) -> cargarExistencias(0));
         HBox barra = new HBox(10, buscador, filtroStock);
         barra.setAlignment(Pos.CENTER_LEFT);
 
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tabla.setPlaceholder(new Label("Sin resultados"));
-        agregar(tabla, "Código", 90, InventarioFila::codigoInterno);
-        agregar(tabla, "Producto", 240, InventarioFila::nombreComercial);
-        agregar(tabla, "Stock", 70, f -> String.valueOf(f.stock()));
-        agregar(tabla, "Mínimo", 70, f -> String.valueOf(f.stockMinimo()));
-        agregar(tabla, "Estado", 100, f -> switch (f.estadoStock()) {
-            case DISPONIBLE -> "Disponible";
-            case BAJO -> "Stock bajo";
-            case SIN_STOCK -> "Sin stock";
+        tabla.setPlaceholder(new Label(Mensajes.get("catalogo.sinResultados")));
+        agregar(tabla, Mensajes.get("producto.columna.codigo"), 90, InventarioFila::codigoInterno);
+        agregar(tabla, Mensajes.get("producto.columna.producto"), 240, InventarioFila::nombreComercial);
+        agregar(tabla, Mensajes.get("inventario.columna.stock"), 70, f -> String.valueOf(f.stock()));
+        agregar(tabla, Mensajes.get("inventario.columna.minimo"), 70, f -> String.valueOf(f.stockMinimo()));
+        agregar(tabla, Mensajes.get("catalogo.columna.estado"), 100, f -> switch (f.estadoStock()) {
+            case DISPONIBLE -> Mensajes.get("inventario.filtro.disponible");
+            case BAJO -> Mensajes.get("inventario.filtro.stockBajo");
+            case SIN_STOCK -> Mensajes.get("inventario.filtro.sinStock");
         });
-        agregar(tabla, "Próx. vencimiento", 130, f -> f.proximoVencimiento() == null ? "" : FECHA.format(f.proximoVencimiento()));
-        agregar(tabla, "Costo prom.", 95, f -> f.costoPromedio() == null ? "" : "S/ " + f.costoPromedio().setScale(2, java.math.RoundingMode.HALF_UP));
-        TableColumn<InventarioFila, InventarioFila> acciones = new TableColumn<>("Detalle");
+        agregar(tabla, Mensajes.get("inventario.columna.proxVencimiento"), 130,
+            f -> f.proximoVencimiento() == null ? "" : FECHA.format(f.proximoVencimiento()));
+        agregar(tabla, Mensajes.get("inventario.columna.costoProm"), 95,
+            f -> f.costoPromedio() == null ? "" : "S/ " + f.costoPromedio().setScale(2, java.math.RoundingMode.HALF_UP));
+        TableColumn<InventarioFila, InventarioFila> acciones = new TableColumn<>(Mensajes.get("inventario.columna.detalle"));
         acciones.setPrefWidth(130);
         acciones.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue()));
         acciones.setCellFactory(c -> new TableCell<>() {
-            private final Button boton = new Button("Lotes y kardex");
+            private final Button boton = new Button(Mensajes.get("inventario.boton.lotesKardex"));
 
             {
                 boton.setOnAction(evento -> mostrarDetalle(getItem()));
@@ -139,7 +147,7 @@ public class InventarioController implements Refrescable {
             }
         });
         tabla.getColumns().add(acciones);
-        Tablas.aplicarIndicadores(tabla, "Estado");
+        Tablas.aplicarIndicadores(tabla, Mensajes.get("catalogo.columna.estado"));
         VBox.setVgrow(tabla, Priority.ALWAYS);
         VBox caja = new VBox(12, barra, tabla, paginador);
         caja.setPadding(new Insets(12, 0, 0, 0));
@@ -151,23 +159,28 @@ public class InventarioController implements Refrescable {
     }
 
     private void mostrarResumen(ResumenInventario r) {
-        resumenLabel.setText(
-            r.productos() + " productos · " + r.unidades() + " unidades · valor a costo S/ " + r.valorCosto()
-                + " · valor a venta S/ " + r.valorVenta() + " · " + r.conStockBajo() + " con stock bajo · "
-                + r.sinStock() + " sin stock"
-        );
+        resumenLabel.setText(Mensajes.get(
+            "inventario.resumen",
+            String.valueOf(r.productos()), String.valueOf(r.unidades()), r.valorCosto().toString(),
+            r.valorVenta().toString(), String.valueOf(r.conStockBajo()), String.valueOf(r.sinStock())
+        ));
     }
 
     private void cargarExistencias(int pagina) {
         paginaActual = Math.max(pagina, 0);
         long actual = ++solicitud;
         String texto = buscador.getText();
-        FiltroStock filtro = switch (filtroStock.getValue() == null ? "Todos" : filtroStock.getValue()) {
-            case "Disponible" -> FiltroStock.DISPONIBLE;
-            case "Stock bajo" -> FiltroStock.BAJO;
-            case "Sin stock" -> FiltroStock.SIN_STOCK;
-            default -> FiltroStock.TODOS;
-        };
+        String valorFiltro = filtroStock.getValue() == null ? Mensajes.get("catalogo.filtro.todos") : filtroStock.getValue();
+        FiltroStock filtro;
+        if (valorFiltro.equals(Mensajes.get("inventario.filtro.disponible"))) {
+            filtro = FiltroStock.DISPONIBLE;
+        } else if (valorFiltro.equals(Mensajes.get("inventario.filtro.stockBajo"))) {
+            filtro = FiltroStock.BAJO;
+        } else if (valorFiltro.equals(Mensajes.get("inventario.filtro.sinStock"))) {
+            filtro = FiltroStock.SIN_STOCK;
+        } else {
+            filtro = FiltroStock.TODOS;
+        }
         PageRequest pageable = PageRequest.of(paginaActual, TAMANO_PAGINA);
         Fondo.ejecutar(
             () -> inventarioService.listar(texto, filtro, pageable),
@@ -208,31 +221,36 @@ public class InventarioController implements Refrescable {
         TableView<LoteResumen> lotes = new TableView<>();
         lotes.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         lotes.setPrefHeight(160);
-        agregar(lotes, "Lote", 140, LoteResumen::codigoLote);
-        agregar(lotes, "Vencimiento", 110, l -> l.fechaVencimiento() == null ? "—" : FECHA.format(l.fechaVencimiento()));
-        agregar(lotes, "Cantidad", 80, l -> String.valueOf(l.cantidadActual()));
-        agregar(lotes, "Estado", 100, l -> l.vencido() ? "Vencido" : "Vigente");
-        Tablas.aplicarIndicadores(lotes, "Estado");
+        agregar(lotes, Mensajes.get("inventario.columna.lote"), 140, LoteResumen::codigoLote);
+        agregar(lotes, Mensajes.get("inventario.columna.vencimiento"), 110,
+            l -> l.fechaVencimiento() == null ? "—" : FECHA.format(l.fechaVencimiento()));
+        agregar(lotes, Mensajes.get("inventario.columna.cantidad"), 80, l -> String.valueOf(l.cantidadActual()));
+        agregar(lotes, Mensajes.get("catalogo.columna.estado"), 100,
+            l -> l.vencido() ? Mensajes.get("inventario.estado.vencido") : Mensajes.get("inventario.estado.vigente"));
+        Tablas.aplicarIndicadores(lotes, Mensajes.get("catalogo.columna.estado"));
         lotes.getItems().setAll(detalle.lotes());
 
         TableView<KardexFila> kardex = new TableView<>();
         kardex.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         kardex.setPrefHeight(260);
-        agregar(kardex, "Fecha", 130, k -> FECHA_HORA.format(k.fecha()));
-        agregar(kardex, "Movimiento", 150, k -> k.tipo().etiqueta());
-        agregar(kardex, "Lote", 110, k -> k.lote() == null ? "" : k.lote());
-        agregar(kardex, "Entrada", 70, k -> k.entrada() == 0 ? "" : String.valueOf(k.entrada()));
-        agregar(kardex, "Salida", 70, k -> k.salida() == 0 ? "" : String.valueOf(k.salida()));
-        agregar(kardex, "Saldo", 70, k -> String.valueOf(k.saldo()));
-        agregar(kardex, "Documento", 110, k -> k.documento() == null ? "" : k.documento());
+        agregar(kardex, Mensajes.get("inventario.columna.fecha"), 130, k -> FECHA_HORA.format(k.fecha()));
+        agregar(kardex, Mensajes.get("inventario.columna.movimiento"), 150, k -> k.tipo().etiqueta());
+        agregar(kardex, Mensajes.get("inventario.columna.lote"), 110, k -> k.lote() == null ? "" : k.lote());
+        agregar(kardex, Mensajes.get("inventario.columna.entrada"), 70, k -> k.entrada() == 0 ? "" : String.valueOf(k.entrada()));
+        agregar(kardex, Mensajes.get("inventario.columna.salida"), 70, k -> k.salida() == 0 ? "" : String.valueOf(k.salida()));
+        agregar(kardex, Mensajes.get("inventario.columna.saldo"), 70, k -> String.valueOf(k.saldo()));
+        agregar(kardex, Mensajes.get("inventario.columna.documento"), 110, k -> k.documento() == null ? "" : k.documento());
         kardex.getItems().setAll(detalle.kardex().getContent());
 
-        VBox contenido = new VBox(10, new Label("Lotes"), lotes, new Label("Kardex (más reciente primero)"), kardex);
+        VBox contenido = new VBox(
+            10, new Label(Mensajes.get("inventario.seccion.lotes")), lotes,
+            new Label(Mensajes.get("inventario.kardexReciente")), kardex
+        );
         contenido.setPrefWidth(760);
         Dialog<Void> dialogo = new Dialog<>();
         dialogo.initOwner(ventana());
-        dialogo.setTitle("Detalle de inventario");
-        dialogo.setHeaderText(fila.nombreComercial() + " — stock " + fila.stock());
+        dialogo.setTitle(Mensajes.get("inventario.dialogo.detalle"));
+        dialogo.setHeaderText(fila.nombreComercial() + " — " + Mensajes.get("inventario.columna.stock") + " " + fila.stock());
         dialogo.getDialogPane().setContent(contenido);
         dialogo.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
         dialogo.show();
@@ -241,7 +259,9 @@ public class InventarioController implements Refrescable {
     // ---------- vencimientos ----------
 
     private VBox construirVencimientos() {
-        filtroDias.getItems().setAll("Vencidos y próximos 30 días", "Vencidos y próximos 60 días", "Vencidos y próximos 90 días");
+        filtroDias.getItems().setAll(
+            Mensajes.get("inventario.dias.30"), Mensajes.get("inventario.dias.60"), Mensajes.get("inventario.dias.90")
+        );
         filtroDias.setValue(filtroDias.getItems().get(0));
         filtroDias.valueProperty().addListener((obs, anterior, nuevo) -> cargarVencimientos());
         Region espacio = new Region();
@@ -250,19 +270,20 @@ public class InventarioController implements Refrescable {
         barra.setAlignment(Pos.CENTER_LEFT);
 
         tablaVencimientos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tablaVencimientos.setPlaceholder(new Label("Sin lotes por vencer"));
-        agregar(tablaVencimientos, "Producto", 240, LoteResumen::producto);
-        agregar(tablaVencimientos, "Lote", 130, LoteResumen::codigoLote);
-        agregar(tablaVencimientos, "Vencimiento", 110, l -> FECHA.format(l.fechaVencimiento()));
-        agregar(tablaVencimientos, "Días", 70, l -> String.valueOf(l.diasParaVencer()));
-        agregar(tablaVencimientos, "Cantidad", 80, l -> String.valueOf(l.cantidadActual()));
-        agregar(tablaVencimientos, "Estado", 100, l -> l.vencido() ? "Vencido" : "Por vencer");
+        tablaVencimientos.setPlaceholder(new Label(Mensajes.get("inventario.sinLotesPorVencer")));
+        agregar(tablaVencimientos, Mensajes.get("producto.columna.producto"), 240, LoteResumen::producto);
+        agregar(tablaVencimientos, Mensajes.get("inventario.columna.lote"), 130, LoteResumen::codigoLote);
+        agregar(tablaVencimientos, Mensajes.get("inventario.columna.vencimiento"), 110, l -> FECHA.format(l.fechaVencimiento()));
+        agregar(tablaVencimientos, Mensajes.get("inventario.columna.dias"), 70, l -> String.valueOf(l.diasParaVencer()));
+        agregar(tablaVencimientos, Mensajes.get("inventario.columna.cantidad"), 80, l -> String.valueOf(l.cantidadActual()));
+        agregar(tablaVencimientos, Mensajes.get("catalogo.columna.estado"), 100,
+            l -> l.vencido() ? Mensajes.get("inventario.estado.vencido") : Mensajes.get("inventario.estado.porVencer"));
         if (sesionActual.esOwner()) {
-            TableColumn<LoteResumen, LoteResumen> baja = new TableColumn<>("Acción");
+            TableColumn<LoteResumen, LoteResumen> baja = new TableColumn<>(Mensajes.get("usuarios.columna.accion"));
             baja.setPrefWidth(120);
             baja.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue()));
             baja.setCellFactory(c -> new TableCell<>() {
-                private final Button boton = new Button("Dar de baja");
+                private final Button boton = new Button(Mensajes.get("inventario.boton.darBaja"));
 
                 {
                     boton.setOnAction(evento -> darDeBaja(getItem()));
@@ -276,7 +297,7 @@ public class InventarioController implements Refrescable {
             });
             tablaVencimientos.getColumns().add(baja);
         }
-        Tablas.aplicarIndicadores(tablaVencimientos, "Estado");
+        Tablas.aplicarIndicadores(tablaVencimientos, Mensajes.get("catalogo.columna.estado"));
         VBox.setVgrow(tablaVencimientos, Priority.ALWAYS);
         VBox caja = new VBox(12, barra, tablaVencimientos);
         caja.setPadding(new Insets(12, 0, 0, 0));
@@ -298,18 +319,21 @@ public class InventarioController implements Refrescable {
             return;
         }
         Formulario formulario = new Formulario(1);
-        TextField cantidad = formulario.texto("cantidad", "Cantidad a dar de baja *", "", false);
+        TextField cantidad = formulario.texto("cantidad", Mensajes.get("inventario.form.cantidadBajaLabel"), "", false);
         cantidad.setText(String.valueOf(lote.cantidadActual()));
-        TextField motivo = formulario.texto("motivo", "Motivo *", lote.vencido() ? "Vencido" : "Merma", false);
-        motivo.setText(lote.vencido() ? "Vencido" : "");
+        TextField motivo = formulario.texto(
+            "motivo", Mensajes.get("inventario.form.motivoLabel"),
+            lote.vencido() ? Mensajes.get("inventario.estado.vencido") : Mensajes.get("inventario.motivo.merma"), false
+        );
+        motivo.setText(lote.vencido() ? Mensajes.get("inventario.estado.vencido") : "");
         DialogoFormulario.mostrar(
-            ventana(), "Dar de baja lote " + lote.codigoLote(), formulario,
+            ventana(), Mensajes.get("inventario.dialogo.darBaja", lote.codigoLote()), formulario,
             () -> {
                 int unidades = entero(cantidad.getText());
                 String razon = motivo.getText();
                 return () -> {
                     inventarioService.registrarMerma(lote.id(), unidades, razon);
-                    return "Baja registrada.";
+                    return Mensajes.get("inventario.bajaRegistrada");
                 };
             },
             aviso -> {
@@ -326,7 +350,7 @@ public class InventarioController implements Refrescable {
             return Integer.parseInt(texto == null ? "" : texto.trim());
         } catch (NumberFormatException error) {
             throw new com.botica.inteligente.shared.exception.CampoInvalidoException(
-                "cantidad", "Ingrese un número entero válido."
+                "cantidad", Mensajes.get("inventario.error.numeroEntero")
             );
         }
     }

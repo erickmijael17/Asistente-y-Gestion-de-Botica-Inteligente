@@ -1,16 +1,18 @@
 package com.botica.inteligente.venta.enums;
 
+import com.botica.inteligente.shared.i18n.Mensajes;
+
 public enum TipoComprobante {
-    BOLETA("Boleta de venta"),
-    NOTA_VENTA("Nota de venta");
+    BOLETA("tipoComprobante.boleta"),
+    NOTA_VENTA("tipoComprobante.notaVenta");
 
-    private final String etiqueta;
+    private final String clave;
 
-    TipoComprobante(String etiqueta) {
-        this.etiqueta = etiqueta;
+    TipoComprobante(String clave) {
+        this.clave = clave;
     }
 
     public String etiqueta() {
-        return etiqueta;
+        return Mensajes.get(clave);
     }
 }

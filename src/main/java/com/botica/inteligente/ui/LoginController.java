@@ -1,9 +1,14 @@
 package com.botica.inteligente.ui;
 
+import com.botica.inteligente.shared.i18n.Idioma;
+import com.botica.inteligente.shared.i18n.Mensajes;
+import com.botica.inteligente.shared.i18n.PreferenciasApp;
 import com.botica.inteligente.usuario.service.AuthService;
+import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -16,6 +21,7 @@ public class LoginController {
 
     private final AuthService authService;
     private Runnable alAutenticar = () -> { };
+    private Runnable alCambiarIdioma = () -> { };
 
     @FXML
     private TextField usernameField;
@@ -29,6 +35,9 @@ public class LoginController {
     @FXML
     private Label errorLabel;
 
+    @FXML
+    private ComboBox<Idioma> idiomaCombo;
+
     public LoginController(AuthService authService) {
         this.authService = authService;
     }
@@ -37,10 +46,29 @@ public class LoginController {
     private void initialize() {
         ingresarButton.setDefaultButton(true);
         usernameField.requestFocus();
+
+        idiomaCombo.setItems(FXCollections.observableArrayList(Idioma.values()));
+        idiomaCombo.setValue(Mensajes.idiomaActual());
+        idiomaCombo.setOnAction(event -> {
+            Idioma seleccionado = idiomaCombo.getValue();
+            if (seleccionado != null && seleccionado != Mensajes.idiomaActual()) {
+                PreferenciasApp.guardarIdioma(seleccionado);
+                Mensajes.establecerIdioma(seleccionado);
+                alCambiarIdioma.run();
+            }
+        });
     }
 
     public void setAlAutenticar(Runnable alAutenticar) {
         this.alAutenticar = alAutenticar == null ? () -> { } : alAutenticar;
+    }
+
+    public void setAlCambiarIdioma(Runnable alCambiarIdioma) {
+        this.alCambiarIdioma = alCambiarIdioma == null ? () -> { } : alCambiarIdioma;
+    }
+
+    public String usernameActual() {
+        return usernameField.getText();
     }
 
     public void prellenar(String username, String mensaje) {

@@ -268,6 +268,26 @@ class CatalogoServiceTest {
     }
 
     @Test
+    void productoSinLaboratorioYSinCodigoInternoLosDejaOpcionalYLoAutogenera() {
+        CategoriaResumen categoria = categoriaService.crear(new CategoriaComando("Cat", null));
+        ProductoComando sinLaboratorioNiCodigo = new ProductoComando(
+            null, null, "Producto sin lab", null, null, TipoProducto.MEDICAMENTO, null, null, null,
+            null, null, null, null, null, null, false, null,
+            new BigDecimal("5.00"), new BigDecimal("8.00"), 5, categoria.id(), null, null
+        );
+
+        ProductoResultado resultado = productoService.crear(sinLaboratorioNiCodigo);
+
+        assertNull(resultado.producto().laboratorioNombre());
+        assertNotNull(resultado.producto().datos().codigoInterno());
+        assertFalse(resultado.producto().datos().codigoInterno().isBlank());
+
+        PageRequest pagina = PageRequest.of(0, 10, Sort.by("nombreComercial"));
+        Page<ProductoResumen> listado = productoService.listar(ProductoFiltro.vacio(), pagina);
+        assertTrue(listado.getContent().stream().anyMatch(p -> p.id().equals(resultado.producto().id())));
+    }
+
+    @Test
     void obtenerDevuelveElProductoOFallaSiNoExiste() {
         CategoriaResumen categoria = categoriaService.crear(new CategoriaComando("Cat", null));
         LaboratorioResumen laboratorio = laboratorioService.crear(laboratorio("Lab", null));

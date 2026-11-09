@@ -1,6 +1,7 @@
 package com.botica.inteligente.security;
 
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.usuario.entity.Usuario;
 import com.botica.inteligente.usuario.enums.Rol;
 import java.util.Optional;
@@ -37,7 +38,7 @@ public class SesionActual {
     /** Exige que haya un usuario autenticado (OWNER o SELLER). */
     public void exigirAutenticado() {
         if (usuario == null) {
-            throw new NegocioException("Debe iniciar sesión para continuar.");
+            throw new NegocioException(Mensajes.get("error.sesion.requerida"));
         }
     }
 

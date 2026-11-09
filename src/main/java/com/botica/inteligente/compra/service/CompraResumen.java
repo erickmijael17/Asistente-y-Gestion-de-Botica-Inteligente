@@ -14,7 +14,6 @@ public record CompraResumen(
     String proveedor,
     String ruc,
     TipoDocumentoCompra tipoDocumento,
-    String numeroDocumento,
     LocalDate fechaDocumento,
     BigDecimal baseImponible,
     BigDecimal igv,

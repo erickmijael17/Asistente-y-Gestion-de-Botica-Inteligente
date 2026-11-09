@@ -2,7 +2,9 @@ package com.botica.inteligente.compra.specification;
 
 import com.botica.inteligente.compra.entity.Compra;
 import com.botica.inteligente.compra.enums.EstadoCompra;
+import com.botica.inteligente.proveedor.entity.Proveedor;
 import com.botica.inteligente.shared.util.Textos;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -18,17 +20,18 @@ public final class CompraSpecification {
         String texto, EstadoCompra estado, LocalDate desde, LocalDate hasta
     ) {
         return (root, query, cb) -> {
+            jakarta.persistence.criteria.Join<Compra, Proveedor> proveedor =
+                root.join("proveedor", JoinType.LEFT);
             if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
-                root.fetch("proveedor");
+                root.fetch("proveedor", JoinType.LEFT);
             }
             List<Predicate> predicados = new ArrayList<>();
             String patron = Textos.patronBusqueda(texto);
             if (patron != null) {
                 predicados.add(cb.or(
                     cb.like(cb.lower(root.get("codigo")), patron),
-                    cb.like(cb.lower(root.get("numeroDocumento")), patron),
-                    cb.like(cb.lower(root.get("proveedor").get("razonSocial")), patron),
-                    cb.like(root.get("proveedor").get("ruc"), patron)
+                    cb.like(cb.lower(proveedor.get("razonSocial")), patron),
+                    cb.like(proveedor.get("ruc"), patron)
                 ));
             }
             if (estado != null) {

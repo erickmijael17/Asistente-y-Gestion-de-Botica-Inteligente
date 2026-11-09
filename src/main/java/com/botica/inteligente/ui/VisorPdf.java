@@ -1,6 +1,7 @@
 package com.botica.inteligente.ui;
 
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +20,7 @@ public final class VisorPdf {
             byte[] contenido = generador.call();
             Path archivo = guardar(nombre, contenido);
             if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                throw new NegocioException("No hay un visor de PDF disponible. Archivo guardado en " + archivo);
+                throw new NegocioException(Mensajes.get("error.pdf.sinVisor", archivo.toString()));
             }
             Desktop.getDesktop().open(archivo.toFile());
             return archivo;

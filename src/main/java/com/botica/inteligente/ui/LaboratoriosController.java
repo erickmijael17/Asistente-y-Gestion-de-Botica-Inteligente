@@ -4,6 +4,7 @@ import com.botica.inteligente.laboratorio.service.LaboratorioComando;
 import com.botica.inteligente.laboratorio.service.LaboratorioResumen;
 import com.botica.inteligente.laboratorio.service.LaboratorioService;
 import com.botica.inteligente.security.SesionActual;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import javafx.scene.control.TextField;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.domain.Page;
@@ -29,21 +30,23 @@ public class LaboratoriosController extends CatalogoController<LaboratorioResume
 
     @Override
     protected String titulo() {
-        return "Laboratorios";
+        return Mensajes.get("laboratorio.titulo");
     }
 
     @Override
     protected String textoBotonNuevo() {
-        return "Nuevo laboratorio";
+        return Mensajes.get("laboratorio.boton.nuevo");
     }
 
     @Override
     protected void configurarColumnas() {
-        columna("Nombre", 220, LaboratorioResumen::nombre);
-        columna("RUC", 110, l -> vacio(l.datos().ruc()));
-        columna("Teléfono", 110, l -> vacio(l.datos().telefono()));
-        columna("Correo", 200, l -> vacio(l.datos().correo()));
-        columna("Estado", 90, l -> l.estado() ? "Activo" : "Inactivo");
+        columna(Mensajes.get("laboratorio.columna.nombre"), 220, LaboratorioResumen::nombre);
+        columna(Mensajes.get("laboratorio.columna.ruc"), 110, l -> vacio(l.datos().ruc()));
+        columna(Mensajes.get("laboratorio.columna.telefono"), 110, l -> vacio(l.datos().telefono()));
+        columna(Mensajes.get("laboratorio.columna.correo"), 200, l -> vacio(l.datos().correo()));
+        columna(Mensajes.get("catalogo.columna.estado"), 90, l -> l.estado()
+            ? Mensajes.get("laboratorio.estado.activo")
+            : Mensajes.get("laboratorio.estado.inactivo"));
     }
 
     @Override
@@ -74,12 +77,18 @@ public class LaboratoriosController extends CatalogoController<LaboratorioResume
     @Override
     protected void abrirFormulario(LaboratorioResumen fila) {
         Formulario formulario = new Formulario(2);
-        TextField nombre = formulario.texto("nombre", "Nombre *", "Nombre del laboratorio", true);
-        TextField ruc = formulario.texto("ruc", "RUC", "11 dígitos", false);
-        TextField telefono = formulario.texto("telefono", "Teléfono", "", false);
-        TextField correo = formulario.texto("correo", "Correo", "contacto@laboratorio.com", false);
-        TextField sitioWeb = formulario.texto("sitioWeb", "Sitio web", "", false);
-        TextField direccion = formulario.texto("direccion", "Dirección", "", true);
+        TextField nombre = formulario.texto(
+            "nombre", Mensajes.get("laboratorio.form.nombreLabel"), Mensajes.get("laboratorio.form.nombrePrompt"), true
+        );
+        TextField ruc = formulario.texto(
+            "ruc", Mensajes.get("laboratorio.columna.ruc"), Mensajes.get("laboratorio.form.rucPrompt"), false
+        );
+        TextField telefono = formulario.texto("telefono", Mensajes.get("laboratorio.columna.telefono"), "", false);
+        TextField correo = formulario.texto(
+            "correo", Mensajes.get("laboratorio.columna.correo"), "contacto@laboratorio.com", false
+        );
+        TextField sitioWeb = formulario.texto("sitioWeb", Mensajes.get("laboratorio.form.sitioWebLabel"), "", false);
+        TextField direccion = formulario.texto("direccion", Mensajes.get("laboratorio.form.direccionLabel"), "", true);
         if (fila != null) {
             LaboratorioComando datos = fila.datos();
             nombre.setText(datos.nombre());
@@ -89,7 +98,9 @@ public class LaboratoriosController extends CatalogoController<LaboratorioResume
             sitioWeb.setText(datos.sitioWeb());
             direccion.setText(datos.direccion());
         }
-        mostrarDialogo(fila == null ? "Nuevo laboratorio" : "Editar laboratorio", formulario, () -> {
+        mostrarDialogo(
+            fila == null ? Mensajes.get("laboratorio.dialogo.nuevo") : Mensajes.get("laboratorio.dialogo.editar"),
+            formulario, () -> {
             LaboratorioComando comando = new LaboratorioComando(
                 nombre.getText(), ruc.getText(), telefono.getText(),
                 correo.getText(), direccion.getText(), sitioWeb.getText()

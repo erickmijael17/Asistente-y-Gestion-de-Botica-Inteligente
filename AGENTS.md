@@ -18,6 +18,13 @@ El proyecto web anterior (Spring REST + React + PostgreSQL + Keycloak) vive solo
 - Login local con BCrypt (`spring-security-crypto`); sin Keycloak ni JWT
 - Lombok, Maven, JUnit 5
 
+## Configuracion de IntelliJ IDEA
+
+- El SDK del proyecto debe ser JDK 17; en este equipo, la entrada de IntelliJ se llama `ms-17` y apunta a `C:\Program Files\Microsoft\jdk-17.0.18.8-hotspot`.
+- Mantener el nivel de lenguaje del proyecto en `JDK_17` y el bytecode de los modulos en 17.
+- Las configuraciones de ejecucion, el importador de Maven y el runner de Maven deben usar el SDK del proyecto (JDK 17). No seleccionar `jdk-22`/Corretto 22 para esta aplicacion.
+- `JAVA_HOME` debe apuntar al mismo JDK 17. Tras cambiarlo, abrir una terminal nueva y reiniciar IntelliJ para que los procesos hereden el valor actualizado.
+
 ## Estructura
 
 Estructura en la raiz del repo, paquete base `com.botica.inteligente`, organizada por funcionalidad:

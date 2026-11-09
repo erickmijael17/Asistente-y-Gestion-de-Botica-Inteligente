@@ -2,6 +2,7 @@ package com.botica.inteligente.usuario.service;
 
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.usuario.entity.Usuario;
 import com.botica.inteligente.usuario.repository.UsuarioRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -10,8 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
-
-    private static final String MENSAJE_CREDENCIALES_INVALIDAS = "Usuario o contraseña incorrectos.";
 
     private final UsuarioRepository usuarioRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -34,11 +33,11 @@ public class AuthService {
         String passwordIngresado = password == null ? "" : password;
 
         Usuario usuario = usuarioRepository.findByUsername(usernameNormalizado)
-            .orElseThrow(() -> new NegocioException(MENSAJE_CREDENCIALES_INVALIDAS));
+            .orElseThrow(() -> new NegocioException(Mensajes.get("error.auth.credencialesInvalidas")));
 
         boolean passwordValido = passwordEncoder.matches(passwordIngresado, usuario.getPassword());
         if (!passwordValido || !Boolean.TRUE.equals(usuario.getEstado())) {
-            throw new NegocioException(MENSAJE_CREDENCIALES_INVALIDAS);
+            throw new NegocioException(Mensajes.get("error.auth.credencialesInvalidas"));
         }
 
         sesionActual.autenticar(usuario);

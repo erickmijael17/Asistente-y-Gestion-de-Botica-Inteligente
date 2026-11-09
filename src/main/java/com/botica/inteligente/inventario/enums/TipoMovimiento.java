@@ -1,19 +1,21 @@
 package com.botica.inteligente.inventario.enums;
 
+import com.botica.inteligente.shared.i18n.Mensajes;
+
 public enum TipoMovimiento {
-    COMPRA(true, "Compra"),
-    ANULACION_VENTA(true, "Anulación de venta"),
-    AJUSTE_ENTRADA(true, "Ajuste (entrada)"),
-    VENTA(false, "Venta"),
-    ANULACION_COMPRA(false, "Anulación de compra"),
-    MERMA(false, "Merma / baja");
+    COMPRA(true, "tipoMovimiento.compra"),
+    ANULACION_VENTA(true, "tipoMovimiento.anulacionVenta"),
+    AJUSTE_ENTRADA(true, "tipoMovimiento.ajusteEntrada"),
+    VENTA(false, "tipoMovimiento.venta"),
+    ANULACION_COMPRA(false, "tipoMovimiento.anulacionCompra"),
+    MERMA(false, "tipoMovimiento.merma");
 
     private final boolean entrada;
-    private final String etiqueta;
+    private final String clave;
 
-    TipoMovimiento(boolean entrada, String etiqueta) {
+    TipoMovimiento(boolean entrada, String clave) {
         this.entrada = entrada;
-        this.etiqueta = etiqueta;
+        this.clave = clave;
     }
 
     public boolean esEntrada() {
@@ -21,6 +23,6 @@ public enum TipoMovimiento {
     }
 
     public String etiqueta() {
-        return etiqueta;
+        return Mensajes.get(clave);
     }
 }

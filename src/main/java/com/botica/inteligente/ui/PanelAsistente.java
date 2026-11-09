@@ -4,6 +4,7 @@ import atlantafx.base.theme.Styles;
 import com.botica.inteligente.asistente.service.AsistenteService;
 import com.botica.inteligente.asistente.service.RespuestaAsistente;
 import com.botica.inteligente.asistente.service.Sugerencia;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +46,7 @@ public class PanelAsistente extends VBox {
     private final VBox conversacion = new VBox(10);
     private final ScrollPane desplazamiento = new ScrollPane(conversacion);
     private final TextField entrada = new TextField();
-    private final Button enviar = new Button("Consultar");
+    private final Button enviar = new Button(Mensajes.get("asistente.consultar"));
     private boolean saludado;
 
     /**
@@ -58,7 +59,7 @@ public class PanelAsistente extends VBox {
         this.alAgregar = alAgregar;
         this.compacto = compacto;
 
-        Label aviso = new Label(RespuestaAsistente.AVISO_ORIENTATIVO);
+        Label aviso = new Label(RespuestaAsistente.avisoOrientativo());
         aviso.getStyleClass().add("muted-text");
         aviso.setWrapText(true);
         aviso.setMinHeight(Region.USE_PREF_SIZE);
@@ -82,8 +83,8 @@ public class PanelAsistente extends VBox {
         VBox.setVgrow(desplazamiento, Priority.ALWAYS);
 
         entrada.setPromptText(compacto
-            ? "Dolencias del paciente…"
-            : "Escriba un síntoma, un medicamento o un principio activo…");
+            ? Mensajes.get("asistente.prompt.compacto")
+            : Mensajes.get("asistente.prompt.completo"));
         entrada.setOnAction(evento -> preguntar(entrada.getText()));
         HBox.setHgrow(entrada, Priority.ALWAYS);
         enviar.getStyleClass().add(Styles.ACCENT);
@@ -106,10 +107,8 @@ public class PanelAsistente extends VBox {
             saludado = true;
             agregarBurbuja(
                 compacto
-                    ? "Cuénteme las dolencias del paciente (por ejemplo: «fiebre y dolor de garganta») y le sugiero "
-                        + "qué pastillas del inventario pueden servir. Usted valida la entrega."
-                    : "Hola, puedo ayudarle a buscar medicamentos del inventario por síntoma, nombre o principio "
-                        + "activo, y a sugerir alternativas con su stock y precio. ¿Qué necesita el cliente?",
+                    ? Mensajes.get("asistente.saludo.compacto")
+                    : Mensajes.get("asistente.saludo.completo"),
                 false
             );
         }
@@ -122,7 +121,7 @@ public class PanelAsistente extends VBox {
         }
         entrada.clear();
         agregarBurbuja(pregunta, true);
-        HBox buscando = fila(burbuja("Buscando en el inventario…", false), false);
+        HBox buscando = fila(burbuja(Mensajes.get("asistente.buscando"), false), false);
         conversacion.getChildren().add(buscando);
         enviar.setDisable(true);
         Fondo.ejecutar(
@@ -177,35 +176,35 @@ public class PanelAsistente extends VBox {
         }
         tarjeta.getChildren().add(muted(unir(s.principioActivo(), s.concentracion(), s.presentacion())));
         if (!s.cubre().isEmpty()) {
-            Label cubre = new Label("Sirve para: " + String.join(", ", s.cubre()));
+            Label cubre = new Label(Mensajes.get("asistente.sirveParaValue", String.join(", ", s.cubre())));
             cubre.getStyleClass().add(Styles.ACCENT);
             cubre.setWrapText(true);
             tarjeta.getChildren().add(cubre);
         }
         Label disponibilidad = new Label(
             "S/ " + s.precioVenta().setScale(2, java.math.RoundingMode.HALF_UP) + " · "
-                + (s.hayStock() ? "Stock: " + s.stock() : "Sin stock")
+                + (s.hayStock() ? Mensajes.get("asistente.stockValue", String.valueOf(s.stock())) : Mensajes.get("inventario.filtro.sinStock"))
         );
         disponibilidad.getStyleClass().add(s.hayStock() ? Styles.SUCCESS : Styles.DANGER);
         tarjeta.getChildren().add(disponibilidad);
         if (s.requiereReceta()) {
-            Label receta = new Label("Requiere receta médica");
+            Label receta = new Label(Mensajes.get("producto.form.requiereRecetaLabel"));
             receta.getStyleClass().add(Styles.WARNING);
             tarjeta.getChildren().add(receta);
         }
 
         HBox acciones = new HBox(8);
         if (alAgregar != null) {
-            Button agregar = new Button("Agregar al carrito");
+            Button agregar = new Button(Mensajes.get("asistente.agregarAlCarrito"));
             agregar.getStyleClass().add(Styles.ACCENT);
             agregar.setDisable(!s.hayStock());
             if (!s.hayStock()) {
-                agregar.setTooltip(new Tooltip("Sin stock disponible"));
+                agregar.setTooltip(new Tooltip(Mensajes.get("asistente.sinStockDisponible")));
             }
             agregar.setOnAction(evento -> alAgregar.accept(s));
             acciones.getChildren().add(agregar);
         }
-        Button ficha = new Button("Ver ficha");
+        Button ficha = new Button(Mensajes.get("asistente.verFicha"));
         ficha.setOnAction(evento -> abrirFicha(s));
         acciones.getChildren().add(ficha);
         tarjeta.getChildren().add(acciones);
@@ -223,24 +222,26 @@ public class PanelAsistente extends VBox {
     private void abrirFicha(Sugerencia s) {
         VBox contenido = new VBox(10);
         contenido.setPrefWidth(520);
-        agregarSeccion(contenido, "Indicaciones", s.indicaciones());
-        agregarSeccion(contenido, "Contraindicaciones", s.contraindicaciones());
-        agregarSeccion(contenido, "Advertencias", s.advertencias());
-        agregarSeccion(contenido, "Precauciones", s.precauciones());
-        agregarSeccion(contenido, "Vía de administración", s.viaAdministracion());
-        agregarSeccion(contenido, "Almacenamiento", s.condicionesAlmacenamiento());
-        String fuente = s.fuenteInformacion() == null ? "sin fuente registrada" : s.fuenteInformacion();
-        String fecha = s.fechaInformacion() == null ? "" : " · actualizado el " + FECHA.format(s.fechaInformacion());
-        contenido.getChildren().add(muted("Fuente: " + fuente + fecha));
-        contenido.getChildren().add(muted(RespuestaAsistente.AVISO_ORIENTATIVO));
+        agregarSeccion(contenido, Mensajes.get("producto.form.indicacionesLabel"), s.indicaciones());
+        agregarSeccion(contenido, Mensajes.get("producto.form.contraindicacionesLabel"), s.contraindicaciones());
+        agregarSeccion(contenido, Mensajes.get("producto.form.advertenciasLabel"), s.advertencias());
+        agregarSeccion(contenido, Mensajes.get("producto.form.precaucionesLabel"), s.precauciones());
+        agregarSeccion(contenido, Mensajes.get("producto.form.viaAdministracionLabel"), s.viaAdministracion());
+        agregarSeccion(contenido, Mensajes.get("producto.form.almacenamientoLabel"), s.condicionesAlmacenamiento());
+        String fuente = s.fuenteInformacion() == null ? Mensajes.get("asistente.sinFuente") : s.fuenteInformacion();
+        String fecha = s.fechaInformacion() == null
+            ? ""
+            : " · " + Mensajes.get("asistente.actualizadoEl", FECHA.format(s.fechaInformacion()));
+        contenido.getChildren().add(muted(Mensajes.get("asistente.fuenteValue", fuente) + fecha));
+        contenido.getChildren().add(muted(RespuestaAsistente.avisoOrientativo()));
 
         ScrollPane marco = new ScrollPane(contenido);
         marco.setFitToWidth(true);
         marco.setPrefViewportHeight(420);
         Dialog<Void> dialogo = new Dialog<>();
         dialogo.initOwner(ventana());
-        dialogo.setTitle("Ficha del producto");
-        dialogo.setHeaderText(s.nombre() + (s.requiereReceta() ? " — requiere receta" : ""));
+        dialogo.setTitle(Mensajes.get("asistente.fichaProducto"));
+        dialogo.setHeaderText(s.nombre() + (s.requiereReceta() ? " — " + Mensajes.get("asistente.requiereReceta") : ""));
         dialogo.getDialogPane().setContent(marco);
         dialogo.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
         dialogo.show();
@@ -249,7 +250,7 @@ public class PanelAsistente extends VBox {
     private void agregarSeccion(VBox contenido, String titulo, String texto) {
         Label cabecera = new Label(titulo);
         cabecera.getStyleClass().add(Styles.TEXT_BOLD);
-        Label cuerpo = new Label(texto == null ? "No registrado en el catálogo." : texto);
+        Label cuerpo = new Label(texto == null ? Mensajes.get("asistente.noRegistrado") : texto);
         cuerpo.setWrapText(true);
         if (texto == null) {
             cuerpo.getStyleClass().add("muted-text");
@@ -293,7 +294,7 @@ public class PanelAsistente extends VBox {
                 presentes.add(parte);
             }
         }
-        return presentes.isEmpty() ? "Sin detalle de composición" : String.join(" · ", presentes);
+        return presentes.isEmpty() ? Mensajes.get("asistente.sinDetalleComposicion") : String.join(" · ", presentes);
     }
 
     private void desplazarAlFinal() {

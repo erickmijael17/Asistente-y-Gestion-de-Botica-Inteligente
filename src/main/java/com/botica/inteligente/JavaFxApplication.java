@@ -17,6 +17,8 @@ import javafx.stage.Stage;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import com.botica.inteligente.shared.i18n.Mensajes;
+import com.botica.inteligente.shared.i18n.PreferenciasApp;
 import com.botica.inteligente.ui.LoginController;
 import com.botica.inteligente.ui.MainController;
 import com.botica.inteligente.ui.SetupInicialController;
@@ -29,6 +31,7 @@ public class JavaFxApplication extends Application {
 
     @Override
     public void init() {
+        Mensajes.establecerIdioma(PreferenciasApp.obtenerIdioma());
         context = new SpringApplicationBuilder(BoticaApplication.class)
             .web(WebApplicationType.NONE)
             .headless(false)
@@ -39,7 +42,7 @@ public class JavaFxApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
-        stage.setTitle("Botica Inteligente");
+        stage.setTitle(Mensajes.get("app.titulo"));
         stage.setMinWidth(380);
         stage.setMinHeight(480);
         stage.setScene(new Scene(vistaCargando(), 440, 300));
@@ -60,7 +63,7 @@ public class JavaFxApplication extends Application {
         });
         comprobarOwner.setOnFailed(event -> {
             log.error("No fue posible comprobar la configuración inicial de usuarios", comprobarOwner.getException());
-            Alert alerta = new Alert(Alert.AlertType.ERROR, "No se pudo iniciar la aplicación.");
+            Alert alerta = new Alert(Alert.AlertType.ERROR, Mensajes.get("app.error.inicio"));
             alerta.initOwner(stage);
             alerta.showAndWait();
             stage.close();
@@ -69,7 +72,7 @@ public class JavaFxApplication extends Application {
     }
 
     private Parent vistaCargando() {
-        VBox contenido = new VBox(16, new ProgressIndicator(), new Label("Preparando la aplicación…"));
+        VBox contenido = new VBox(16, new ProgressIndicator(), new Label(Mensajes.get("app.preparando")));
         contenido.setAlignment(Pos.CENTER);
         return contenido;
     }
@@ -80,7 +83,7 @@ public class JavaFxApplication extends Application {
             setupController.setAlCompletar(username -> mostrarLogin(
                 stage,
                 username,
-                "Configuración completada. Inicia sesión."
+                Mensajes.get("setup.completada")
             ));
         }, 500, 610, 380, 500);
     }
@@ -89,6 +92,9 @@ public class JavaFxApplication extends Application {
         cargarVista(stage, "/view/login-view.fxml", controller -> {
             LoginController loginController = (LoginController) controller;
             loginController.setAlAutenticar(() -> mostrarMain(stage));
+            loginController.setAlCambiarIdioma(
+                () -> mostrarLogin(stage, loginController.usernameActual(), "")
+            );
             loginController.prellenar(usernameInicial, mensajeInicial);
         }, 480, 540, 380, 480);
     }
@@ -111,6 +117,7 @@ public class JavaFxApplication extends Application {
     ) {
         try {
             FXMLLoader loader = new FXMLLoader(JavaFxApplication.class.getResource(ruta));
+            loader.setResources(Mensajes.bundleActual());
             loader.setControllerFactory(context::getBean);
             Parent raiz = loader.load();
             configurarController.accept(loader.getController());
@@ -128,7 +135,7 @@ public class JavaFxApplication extends Application {
             stage.centerOnScreen();
         } catch (IOException exception) {
             log.error("No fue posible cargar la vista {}", ruta, exception);
-            Alert alerta = new Alert(Alert.AlertType.ERROR, "No se pudo abrir la pantalla solicitada.");
+            Alert alerta = new Alert(Alert.AlertType.ERROR, Mensajes.get("app.error.vista"));
             alerta.initOwner(stage);
             alerta.showAndWait();
         }

@@ -6,9 +6,7 @@ import java.util.List;
 
 public record NuevaCompra(
     String ruc,
-    String razonSocial,
     TipoDocumentoCompra tipoDocumento,
-    String numeroDocumento,
     LocalDate fechaDocumento,
     boolean aplicaIgv,
     boolean preciosIncluyenIgv,

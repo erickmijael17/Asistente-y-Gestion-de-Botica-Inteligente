@@ -9,6 +9,7 @@ import com.botica.inteligente.dashboard.service.ResumenVentas;
 import com.botica.inteligente.inventario.service.InventarioFila;
 import com.botica.inteligente.inventario.service.LoteResumen;
 import com.botica.inteligente.security.SesionActual;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
@@ -118,16 +119,16 @@ public class DashboardController implements Refrescable {
         periodo.valueProperty().addListener((obs, anterior, nuevo) -> cargarVentas());
         Region espacio = new Region();
         HBox.setHgrow(espacio, Priority.ALWAYS);
-        HBox barra = new HBox(10, new Label("Período:"), periodo, espacio);
+        HBox barra = new HBox(10, new Label(Mensajes.get("dashboard.periodo")), periodo, espacio);
         barra.setAlignment(Pos.CENTER_LEFT);
 
         variacion.getStyleClass().add("muted-text");
         HBox tarjetas = new HBox(
             14,
-            tarjeta("Ventas del período", ventas, variacion, "kpi-verde"),
-            tarjeta("N.º de ventas", cantidad, null, "kpi-azul"),
-            tarjeta("Ticket promedio", ticket, null, "kpi-violeta"),
-            tarjeta("Utilidad bruta", utilidad, null, "kpi-ambar")
+            tarjeta(Mensajes.get("dashboard.kpi.ventasPeriodo"), ventas, variacion, "kpi-verde"),
+            tarjeta(Mensajes.get("dashboard.kpi.numVentas"), cantidad, null, "kpi-azul"),
+            tarjeta(Mensajes.get("dashboard.kpi.ticketPromedio"), ticket, null, "kpi-violeta"),
+            tarjeta(Mensajes.get("dashboard.kpi.utilidadBruta"), utilidad, null, "kpi-ambar")
         );
 
         grafico.setLegendVisible(false);
@@ -136,17 +137,17 @@ public class DashboardController implements Refrescable {
         grafico.setPrefHeight(240);
         grafico.setMinHeight(200);
         ejeY.setLabel("S/");
-        agregar(masVendidos, "Producto", 280, ProductoVendido::nombre);
-        agregar(masVendidos, "Unidades", 90, p -> String.valueOf(p.unidades()));
-        agregar(masVendidos, "Importe", 110, p -> "S/ " + p.importe().setScale(2, RoundingMode.HALF_UP));
+        agregar(masVendidos, Mensajes.get("producto.columna.producto"), 280, ProductoVendido::nombre);
+        agregar(masVendidos, Mensajes.get("dashboard.columna.unidades"), 90, p -> String.valueOf(p.unidades()));
+        agregar(masVendidos, Mensajes.get("compra.columna.importe"), 110, p -> "S/ " + p.importe().setScale(2, RoundingMode.HALF_UP));
         masVendidos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        masVendidos.setPlaceholder(new Label("Sin ventas en el período"));
+        masVendidos.setPlaceholder(new Label(Mensajes.get("dashboard.sinVentasPeriodo")));
         masVendidos.setPrefHeight(240);
         masVendidos.setMinHeight(160);
         ejeX.setTickLabelRotation(-30);
-        VBox listado = new VBox(6, subtitulo("Productos más vendidos"), masVendidos);
+        VBox listado = new VBox(6, subtitulo(Mensajes.get("dashboard.productosMasVendidos")), masVendidos);
         listado.setPrefWidth(520);
-        HBox medio = new HBox(14, new VBox(6, subtitulo("Ventas por período"), grafico), listado);
+        HBox medio = new HBox(14, new VBox(6, subtitulo(Mensajes.get("dashboard.ventasPorPeriodo")), grafico), listado);
         HBox.setHgrow(medio.getChildren().get(0), Priority.ALWAYS);
         VBox.setVgrow(grafico, Priority.ALWAYS);
 
@@ -187,10 +188,10 @@ public class DashboardController implements Refrescable {
         ticket.setText(dinero(r.ticketPromedio()));
         utilidad.setText(dinero(r.utilidadBruta()));
         if (r.variacionPorcentual() == null) {
-            variacion.setText("Sin período previo");
+            variacion.setText(Mensajes.get("dashboard.sinPeriodoPrevio"));
         } else {
             String flecha = r.variacionPorcentual().signum() >= 0 ? "▲ " : "▼ ";
-            variacion.setText(flecha + r.variacionPorcentual().abs() + " % vs período anterior");
+            variacion.setText(flecha + Mensajes.get("dashboard.variacion", r.variacionPorcentual().abs().toString()));
         }
         XYChart.Series<String, Number> serie = new XYChart.Series<>();
         r.serie().forEach(punto -> serie.getData().add(new XYChart.Data<>(punto.etiqueta(), punto.total())));
@@ -205,21 +206,24 @@ public class DashboardController implements Refrescable {
         alertaVencimiento.getStyleClass().add(Styles.TEXT_BOLD);
 
         tablaStock.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tablaStock.setPlaceholder(new Label("Sin alertas de stock"));
-        agregar(tablaStock, "Producto", 240, InventarioFila::nombreComercial);
-        agregar(tablaStock, "Stock", 60, f -> String.valueOf(f.stock()));
-        agregar(tablaStock, "Mínimo", 70, f -> String.valueOf(f.stockMinimo()));
-        agregar(tablaStock, "Estado", 90, f -> f.estadoStock() == InventarioFila.EstadoStock.SIN_STOCK ? "Sin stock" : "Stock bajo");
+        tablaStock.setPlaceholder(new Label(Mensajes.get("dashboard.sinAlertasStock")));
+        agregar(tablaStock, Mensajes.get("producto.columna.producto"), 240, InventarioFila::nombreComercial);
+        agregar(tablaStock, Mensajes.get("inventario.columna.stock"), 60, f -> String.valueOf(f.stock()));
+        agregar(tablaStock, Mensajes.get("inventario.columna.minimo"), 70, f -> String.valueOf(f.stockMinimo()));
+        agregar(tablaStock, Mensajes.get("catalogo.columna.estado"), 90, f -> f.estadoStock() == InventarioFila.EstadoStock.SIN_STOCK
+            ? Mensajes.get("inventario.filtro.sinStock")
+            : Mensajes.get("inventario.filtro.stockBajo"));
 
         tablaVencimientos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tablaVencimientos.setPlaceholder(new Label("Sin lotes por vencer"));
-        agregar(tablaVencimientos, "Producto", 220, LoteResumen::producto);
-        agregar(tablaVencimientos, "Lote", 100, LoteResumen::codigoLote);
-        agregar(tablaVencimientos, "Vence", 90, l -> FECHA.format(l.fechaVencimiento()));
-        agregar(tablaVencimientos, "Cant.", 60, l -> String.valueOf(l.cantidadActual()));
-        agregar(tablaVencimientos, "Estado", 80, l -> l.vencido() ? "Vencido" : "Por vencer");
-        Tablas.aplicarIndicadores(tablaStock, "Estado");
-        Tablas.aplicarIndicadores(tablaVencimientos, "Estado");
+        tablaVencimientos.setPlaceholder(new Label(Mensajes.get("inventario.sinLotesPorVencer")));
+        agregar(tablaVencimientos, Mensajes.get("producto.columna.producto"), 220, LoteResumen::producto);
+        agregar(tablaVencimientos, Mensajes.get("inventario.columna.lote"), 100, LoteResumen::codigoLote);
+        agregar(tablaVencimientos, Mensajes.get("compra.columna.vence"), 90, l -> FECHA.format(l.fechaVencimiento()));
+        agregar(tablaVencimientos, Mensajes.get("compra.columna.cant"), 60, l -> String.valueOf(l.cantidadActual()));
+        agregar(tablaVencimientos, Mensajes.get("catalogo.columna.estado"), 80,
+            l -> l.vencido() ? Mensajes.get("inventario.estado.vencido") : Mensajes.get("inventario.estado.porVencer"));
+        Tablas.aplicarIndicadores(tablaStock, Mensajes.get("catalogo.columna.estado"));
+        Tablas.aplicarIndicadores(tablaVencimientos, Mensajes.get("catalogo.columna.estado"));
         tablaStock.setPrefHeight(200);
         tablaVencimientos.setPrefHeight(200);
 
@@ -227,16 +231,20 @@ public class DashboardController implements Refrescable {
         VBox vencimientos = new VBox(6, alertaVencimiento, tablaVencimientos);
         HBox.setHgrow(stock, Priority.ALWAYS);
         HBox.setHgrow(vencimientos, Priority.ALWAYS);
-        VBox seccion = new VBox(8, subtitulo("Alertas de inventario"), new HBox(14, stock, vencimientos));
+        VBox seccion = new VBox(8, subtitulo(Mensajes.get("dashboard.alertasInventario")), new HBox(14, stock, vencimientos));
         VBox.setVgrow(seccion, Priority.SOMETIMES);
         return seccion;
     }
 
     private void mostrarAlertas(Alertas alertas) {
-        alertaStock.setText(alertas.productosConStockBajo() + " con stock bajo · " + alertas.productosSinStock() + " sin stock");
-        alertaVencimiento.setText(
-            alertas.lotesPorVencer() + " lotes por vencer en 30 días · " + alertas.lotesVencidos() + " vencidos con stock"
-        );
+        alertaStock.setText(Mensajes.get(
+            "dashboard.alertaStock",
+            String.valueOf(alertas.productosConStockBajo()), String.valueOf(alertas.productosSinStock())
+        ));
+        alertaVencimiento.setText(Mensajes.get(
+            "dashboard.alertaVencimiento",
+            String.valueOf(alertas.lotesPorVencer()), String.valueOf(alertas.lotesVencidos())
+        ));
         tablaStock.getItems().setAll(alertas.stock());
         tablaVencimientos.getItems().setAll(alertas.vencimientos());
     }

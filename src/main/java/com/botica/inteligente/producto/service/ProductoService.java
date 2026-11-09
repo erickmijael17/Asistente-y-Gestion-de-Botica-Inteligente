@@ -10,6 +10,7 @@ import com.botica.inteligente.producto.specification.ProductoSpecification;
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.Ean13;
 import com.botica.inteligente.shared.util.Textos;
 import java.math.BigDecimal;
@@ -26,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductoService {
 
     private static final Logger log = LoggerFactory.getLogger(ProductoService.class);
-    private static final String SIN_PERMISO = "No tiene permisos para modificar productos.";
     private static final BigDecimal PRECIO_MAXIMO = new BigDecimal("9999999999.99");
     private static final int STOCK_MINIMO_MAXIMO = 99_999;
 
@@ -72,14 +72,16 @@ public class ProductoService {
 
     @Transactional
     public ProductoResultado crear(ProductoComando comando) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.producto.sinPermiso"));
         ProductoComando datos = normalizar(comando);
-        validarUnicidad(datos, null);
+        String codigoInterno = datos.codigoInterno() != null ? datos.codigoInterno() : generarCodigoInterno();
+        validarUnicidad(codigoInterno, datos.codigoBarras(), null);
         Categoria categoria = categoriaActiva(datos.categoriaId());
         Laboratorio laboratorio = laboratorioActivo(datos.laboratorioId());
 
         Producto producto = new Producto();
         aplicar(producto, datos, categoria, laboratorio);
+        producto.setCodigoInterno(codigoInterno);
         Producto guardado = productoRepository.save(producto);
         log.info("Producto creado: {}", guardado.getCodigoInterno());
         return resultado(guardado);
@@ -87,24 +89,38 @@ public class ProductoService {
 
     @Transactional
     public ProductoResultado actualizar(Long id, ProductoComando comando) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.producto.sinPermiso"));
         Producto producto = buscar(id);
         ProductoComando datos = normalizar(comando);
-        validarUnicidad(datos, id);
+        String codigoInterno = datos.codigoInterno() != null ? datos.codigoInterno() : producto.getCodigoInterno();
+        validarUnicidad(codigoInterno, datos.codigoBarras(), id);
         Categoria categoria = datos.categoriaId().equals(producto.getCategoria().getId())
             ? producto.getCategoria()
             : categoriaActiva(datos.categoriaId());
-        Laboratorio laboratorio = datos.laboratorioId().equals(producto.getLaboratorio().getId())
-            ? producto.getLaboratorio()
-            : laboratorioActivo(datos.laboratorioId());
+        Laboratorio laboratorioActual = producto.getLaboratorio();
+        Laboratorio laboratorio = datos.laboratorioId() == null
+            ? null
+            : (laboratorioActual != null && datos.laboratorioId().equals(laboratorioActual.getId())
+                ? laboratorioActual
+                : laboratorioActivo(datos.laboratorioId()));
 
         aplicar(producto, datos, categoria, laboratorio);
+        producto.setCodigoInterno(codigoInterno);
         return resultado(productoRepository.save(producto));
+    }
+
+    private String generarCodigoInterno() {
+        long numero = productoRepository.count() + 1;
+        String codigo;
+        do {
+            codigo = String.format("PRD-%06d", numero++);
+        } while (productoRepository.existsByCodigoInternoIgnoreCase(codigo));
+        return codigo;
     }
 
     @Transactional
     public ProductoResumen cambiarEstado(Long id, boolean estado) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.producto.sinPermiso"));
         Producto producto = buscar(id);
         producto.setEstado(estado);
         return resumen(productoRepository.save(producto));
@@ -112,40 +128,43 @@ public class ProductoService {
 
     private Producto buscar(Long id) {
         return productoRepository.findById(id)
-            .orElseThrow(() -> new NegocioException("No se encontró el producto seleccionado."));
+            .orElseThrow(() -> new NegocioException(Mensajes.get("error.producto.noEncontrado")));
     }
 
     private Categoria categoriaActiva(Long id) {
         Categoria categoria = categoriaRepository.findById(id)
-            .orElseThrow(() -> new CampoInvalidoException("categoria", "La categoría seleccionada no existe."));
+            .orElseThrow(() -> new CampoInvalidoException("categoria", Mensajes.get("error.producto.categoriaNoExiste")));
         if (!Boolean.TRUE.equals(categoria.getEstado())) {
-            throw new CampoInvalidoException("categoria", "La categoría seleccionada está inactiva.");
+            throw new CampoInvalidoException("categoria", Mensajes.get("error.producto.categoriaInactiva"));
         }
         return categoria;
     }
 
     private Laboratorio laboratorioActivo(Long id) {
+        if (id == null) {
+            return null;
+        }
         Laboratorio laboratorio = laboratorioRepository.findById(id)
-            .orElseThrow(() -> new CampoInvalidoException("laboratorio", "El laboratorio seleccionado no existe."));
+            .orElseThrow(() -> new CampoInvalidoException("laboratorio", Mensajes.get("error.producto.laboratorioNoExiste")));
         if (!Boolean.TRUE.equals(laboratorio.getEstado())) {
-            throw new CampoInvalidoException("laboratorio", "El laboratorio seleccionado está inactivo.");
+            throw new CampoInvalidoException("laboratorio", Mensajes.get("error.producto.laboratorioInactivo"));
         }
         return laboratorio;
     }
 
-    private void validarUnicidad(ProductoComando datos, Long id) {
+    private void validarUnicidad(String codigoInterno, String codigoBarras, Long id) {
         boolean codigoInternoRepetido = id == null
-            ? productoRepository.existsByCodigoInternoIgnoreCase(datos.codigoInterno())
-            : productoRepository.existsByCodigoInternoIgnoreCaseAndIdNot(datos.codigoInterno(), id);
+            ? productoRepository.existsByCodigoInternoIgnoreCase(codigoInterno)
+            : productoRepository.existsByCodigoInternoIgnoreCaseAndIdNot(codigoInterno, id);
         if (codigoInternoRepetido) {
-            throw new CampoInvalidoException("codigoInterno", "Ya existe un producto con ese código interno.");
+            throw new CampoInvalidoException("codigoInterno", Mensajes.get("error.producto.codigoInternoDuplicado"));
         }
-        if (datos.codigoBarras() != null) {
+        if (codigoBarras != null) {
             boolean barrasRepetido = id == null
-                ? productoRepository.existsByCodigoBarras(datos.codigoBarras())
-                : productoRepository.existsByCodigoBarrasAndIdNot(datos.codigoBarras(), id);
+                ? productoRepository.existsByCodigoBarras(codigoBarras)
+                : productoRepository.existsByCodigoBarrasAndIdNot(codigoBarras, id);
             if (barrasRepetido) {
-                throw new CampoInvalidoException("codigoBarras", "Ya existe un producto con ese código de barras.");
+                throw new CampoInvalidoException("codigoBarras", Mensajes.get("error.producto.codigoBarrasDuplicado"));
             }
         }
     }
@@ -153,28 +172,24 @@ public class ProductoService {
     private ProductoComando normalizar(ProductoComando c) {
         String codigoBarras = Textos.limpiar(c.codigoBarras());
         if (codigoBarras != null && !Ean13.esValido(codigoBarras)) {
-            throw new CampoInvalidoException(
-                "codigoBarras", "Código EAN-13 inválido: deben ser 13 dígitos con dígito verificador correcto."
-            );
+            throw new CampoInvalidoException("codigoBarras", Mensajes.get("error.producto.eanInvalido"));
         }
         if (c.tipoProducto() == null) {
-            throw new CampoInvalidoException("tipoProducto", "Seleccione el tipo de producto.");
+            throw new CampoInvalidoException("tipoProducto", Mensajes.get("error.producto.tipoRequerido"));
         }
         if (c.categoriaId() == null) {
-            throw new CampoInvalidoException("categoria", "Seleccione una categoría.");
-        }
-        if (c.laboratorioId() == null) {
-            throw new CampoInvalidoException("laboratorio", "Seleccione un laboratorio.");
+            throw new CampoInvalidoException("categoria", Mensajes.get("error.producto.categoriaRequerida"));
         }
         BigDecimal precioCompra = precio("precioCompra", "el precio de compra", c.precioCompra());
         BigDecimal precioVenta = precio("precioVenta", "el precio de venta", c.precioVenta());
         if (c.stockMinimo() == null || c.stockMinimo() < 0 || c.stockMinimo() > STOCK_MINIMO_MAXIMO) {
             throw new CampoInvalidoException(
-                "stockMinimo", "El stock mínimo debe estar entre 0 y " + STOCK_MINIMO_MAXIMO + "."
+                "stockMinimo",
+                Mensajes.get("error.producto.stockMinimoRango", String.valueOf(STOCK_MINIMO_MAXIMO))
             );
         }
         return new ProductoComando(
-            Textos.requerido("codigoInterno", "el código interno", c.codigoInterno(), 60),
+            Textos.opcional("codigoInterno", "código interno", c.codigoInterno(), 60),
             codigoBarras,
             Textos.requerido("nombreComercial", "el nombre comercial", c.nombreComercial(), 180),
             Textos.opcional("nombreGenerico", "nombre genérico", c.nombreGenerico(), 180),
@@ -203,14 +218,14 @@ public class ProductoService {
 
     private BigDecimal precio(String campo, String etiqueta, BigDecimal valor) {
         if (valor == null) {
-            throw new CampoInvalidoException(campo, "Ingrese " + etiqueta + ".");
+            throw new CampoInvalidoException(campo, Mensajes.get("validacion.requerido", etiqueta));
         }
         if (valor.signum() < 0) {
-            throw new CampoInvalidoException(campo, "Ingrese " + etiqueta + " mayor o igual a cero.");
+            throw new CampoInvalidoException(campo, Mensajes.get("validacion.noNegativo", etiqueta));
         }
         BigDecimal redondeado = valor.setScale(2, java.math.RoundingMode.HALF_UP);
         if (redondeado.compareTo(PRECIO_MAXIMO) > 0) {
-            throw new CampoInvalidoException(campo, "El valor de " + etiqueta + " es demasiado grande.");
+            throw new CampoInvalidoException(campo, Mensajes.get("validacion.valorDemasiadoGrande", etiqueta));
         }
         return redondeado;
     }
@@ -244,7 +259,7 @@ public class ProductoService {
 
     private ProductoResultado resultado(Producto producto) {
         String advertencia = producto.getPrecioVenta().compareTo(producto.getPrecioCompra()) < 0
-            ? "El precio de venta es menor que el precio de compra."
+            ? Mensajes.get("error.producto.ventaMenorQueCompra")
             : null;
         return new ProductoResultado(resumen(producto), advertencia);
     }
@@ -257,10 +272,12 @@ public class ProductoService {
             p.getContraindicaciones(), p.getAdvertencias(), p.getPrecauciones(),
             p.getCondicionesAlmacenamiento(), Boolean.TRUE.equals(p.getRequiereReceta()),
             p.getRegistroSanitario(), p.getPrecioCompra(), p.getPrecioVenta(), p.getStockMinimo(),
-            p.getCategoria().getId(), p.getLaboratorio().getId(), p.getFuenteInformacion()
+            p.getCategoria().getId(), p.getLaboratorio() == null ? null : p.getLaboratorio().getId(),
+            p.getFuenteInformacion()
         );
         return new ProductoResumen(
-            p.getId(), datos, p.getCategoria().getNombre(), p.getLaboratorio().getNombre(),
+            p.getId(), datos, p.getCategoria().getNombre(),
+            p.getLaboratorio() == null ? null : p.getLaboratorio().getNombre(),
             Boolean.TRUE.equals(p.getEstado())
         );
     }

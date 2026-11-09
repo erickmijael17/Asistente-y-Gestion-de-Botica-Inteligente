@@ -14,6 +14,7 @@ import com.botica.inteligente.producto.service.ProductoResumen;
 import com.botica.inteligente.producto.service.ProductoService;
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.CalculadoraIgv;
 import com.botica.inteligente.shared.util.Ean13;
 import java.math.BigDecimal;
@@ -107,17 +108,19 @@ public class ComprasController implements Refrescable {
     public void initialize() {
         mensaje.getStyleClass().add("muted-text");
 
-        buscador.setPromptText("Buscar por código, documento o proveedor…");
+        buscador.setPromptText(Mensajes.get("compra.buscar.prompt"));
         buscador.setPrefWidth(300);
         buscador.textProperty().addListener((obs, anterior, nuevo) -> {
             esperaBusqueda.setOnFinished(evento -> cargar(0));
             esperaBusqueda.playFromStart();
         });
-        filtroEstado.getItems().setAll("Todas", "Registradas", "Anuladas");
-        filtroEstado.setValue("Todas");
+        filtroEstado.getItems().setAll(
+            Mensajes.get("compra.filtro.todas"), Mensajes.get("compra.filtro.registradas"), Mensajes.get("compra.filtro.anuladas")
+        );
+        filtroEstado.setValue(Mensajes.get("compra.filtro.todas"));
         filtroEstado.valueProperty().addListener((obs, anterior, nuevo) -> cargar(0));
-        desde.setPromptText("Desde");
-        hasta.setPromptText("Hasta");
+        desde.setPromptText(Mensajes.get("compra.desde"));
+        hasta.setPromptText(Mensajes.get("compra.hasta"));
         desde.valueProperty().addListener((obs, anterior, nuevo) -> cargar(0));
         hasta.valueProperty().addListener((obs, anterior, nuevo) -> cargar(0));
         Region espacio = new Region();
@@ -125,22 +128,24 @@ public class ComprasController implements Refrescable {
         HBox barra = new HBox(10, buscador, filtroEstado, desde, hasta, espacio);
         barra.setAlignment(Pos.CENTER_LEFT);
         if (sesionActual.esOwner()) {
-            Button nueva = new Button("Nueva compra");
+            Button nueva = new Button(Mensajes.get("compra.boton.nueva"));
             nueva.getStyleClass().add(Styles.ACCENT);
             nueva.setOnAction(evento -> abrirNuevaCompra());
             barra.getChildren().add(nueva);
         }
 
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tabla.setPlaceholder(new Label("Sin compras registradas"));
-        agregar(tabla, "Código", 100, CompraResumen::codigo);
-        agregar(tabla, "Fecha", 130, c -> FECHA_HORA.format(c.fecha()));
-        agregar(tabla, "Proveedor", 220, c -> c.proveedor() + " (" + c.ruc() + ")");
-        agregar(tabla, "Documento", 150, c -> c.tipoDocumento().name() + " " + c.numeroDocumento());
-        agregar(tabla, "Total", 90, c -> "S/ " + c.total());
-        agregar(tabla, "Estado", 90, c -> c.estado() == EstadoCompra.REGISTRADA ? "Registrada" : "Anulada");
+        tabla.setPlaceholder(new Label(Mensajes.get("compra.sinRegistros")));
+        agregar(tabla, Mensajes.get("producto.columna.codigo"), 100, CompraResumen::codigo);
+        agregar(tabla, Mensajes.get("inventario.columna.fecha"), 130, c -> FECHA_HORA.format(c.fecha()));
+        agregar(tabla, Mensajes.get("compra.columna.proveedor"), 220, this::textoProveedor);
+        agregar(tabla, Mensajes.get("inventario.columna.documento"), 150, c -> textoTipoDocumento(c.tipoDocumento()));
+        agregar(tabla, Mensajes.get("compra.columna.total"), 90, c -> "S/ " + c.total());
+        agregar(tabla, Mensajes.get("catalogo.columna.estado"), 90, c -> c.estado() == EstadoCompra.REGISTRADA
+            ? Mensajes.get("compra.estado.registrada")
+            : Mensajes.get("compra.estado.anulada"));
         tabla.getColumns().add(columnaAcciones());
-        Tablas.aplicarIndicadores(tabla, "Estado");
+        Tablas.aplicarIndicadores(tabla, Mensajes.get("catalogo.columna.estado"));
         VBox.setVgrow(tabla, Priority.ALWAYS);
 
         raiz.getChildren().setAll(barra, mensaje, tabla, paginador);
@@ -155,15 +160,19 @@ public class ComprasController implements Refrescable {
         paginaActual = Math.max(pagina, 0);
         long actual = ++solicitud;
         String texto = buscador.getText();
-        EstadoCompra estado = switch (filtroEstado.getValue() == null ? "Todas" : filtroEstado.getValue()) {
-            case "Registradas" -> EstadoCompra.REGISTRADA;
-            case "Anuladas" -> EstadoCompra.ANULADA;
-            default -> null;
-        };
+        String valorFiltro = filtroEstado.getValue() == null ? Mensajes.get("compra.filtro.todas") : filtroEstado.getValue();
+        EstadoCompra estado;
+        if (valorFiltro.equals(Mensajes.get("compra.filtro.registradas"))) {
+            estado = EstadoCompra.REGISTRADA;
+        } else if (valorFiltro.equals(Mensajes.get("compra.filtro.anuladas"))) {
+            estado = EstadoCompra.ANULADA;
+        } else {
+            estado = null;
+        }
         LocalDate fechaDesde = desde.getValue();
         LocalDate fechaHasta = hasta.getValue();
         PageRequest pageable = PageRequest.of(paginaActual, TAMANO_PAGINA, Sort.by("fecha").descending());
-        mensaje.setText("Cargando…");
+        mensaje.setText(Mensajes.get("catalogo.cargando"));
         Fondo.ejecutar(
             () -> compraService.listar(texto, estado, fechaDesde, fechaHasta, pageable),
             resultado -> {
@@ -188,13 +197,13 @@ public class ComprasController implements Refrescable {
 
     private TableColumn<CompraResumen, CompraResumen> columnaAcciones() {
         boolean owner = sesionActual.esOwner();
-        TableColumn<CompraResumen, CompraResumen> columna = new TableColumn<>("Acciones");
+        TableColumn<CompraResumen, CompraResumen> columna = new TableColumn<>(Mensajes.get("catalogo.acciones"));
         columna.setPrefWidth(180);
         columna.setSortable(false);
         columna.setCellValueFactory(c -> new ReadOnlyObjectWrapper<>(c.getValue()));
         columna.setCellFactory(c -> new TableCell<>() {
-            private final Button detalle = new Button("Detalle");
-            private final Button anular = new Button("Anular");
+            private final Button detalle = new Button(Mensajes.get("inventario.columna.detalle"));
+            private final Button anular = new Button(Mensajes.get("compra.boton.anular"));
             private final HBox caja = new HBox(8, detalle, anular);
 
             {
@@ -234,28 +243,30 @@ public class ComprasController implements Refrescable {
         TableView<CompraResumen.Detalle> lineas = new TableView<>();
         lineas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         lineas.setPrefHeight(240);
-        agregar(lineas, "Producto", 220, d -> d.codigoProducto() + " · " + d.nombreProducto());
-        agregar(lineas, "Cant.", 60, d -> String.valueOf(d.cantidad()));
-        agregar(lineas, "Costo", 80, d -> d.costoUnitario().stripTrailingZeros().toPlainString());
-        agregar(lineas, "Importe", 90, d -> d.importe().toPlainString());
-        agregar(lineas, "Lote", 120, CompraResumen.Detalle::codigoLote);
-        agregar(lineas, "Vence", 100, d -> d.fechaVencimiento() == null ? "—" : FECHA.format(d.fechaVencimiento()));
+        agregar(lineas, Mensajes.get("producto.columna.producto"), 220, d -> d.codigoProducto() + " · " + d.nombreProducto());
+        agregar(lineas, Mensajes.get("compra.columna.cant"), 60, d -> String.valueOf(d.cantidad()));
+        agregar(lineas, Mensajes.get("compra.columna.costo"), 80, d -> d.costoUnitario().stripTrailingZeros().toPlainString());
+        agregar(lineas, Mensajes.get("compra.columna.importe"), 90, d -> d.importe().toPlainString());
+        agregar(lineas, Mensajes.get("inventario.columna.lote"), 120, CompraResumen.Detalle::codigoLote);
+        agregar(lineas, Mensajes.get("compra.columna.vence"), 100,
+            d -> d.fechaVencimiento() == null ? "—" : FECHA.format(d.fechaVencimiento()));
         lineas.getItems().setAll(compra.detalles());
 
         Label cabecera = new Label(
-            compra.proveedor() + " · RUC " + compra.ruc() + "\n"
-                + compra.tipoDocumento() + " " + compra.numeroDocumento() + " (" + FECHA.format(compra.fechaDocumento()) + ")"
+            textoProveedor(compra) + "\n"
+                + textoTipoDocumento(compra.tipoDocumento()) + " (" + FECHA.format(compra.fechaDocumento()) + ")"
         );
-        Label totales = new Label(
-            "Base S/ " + compra.baseImponible() + " · IGV S/ " + compra.igv() + " · Total S/ " + compra.total()
-        );
+        Label totales = new Label(Mensajes.get(
+            "compra.totales", compra.baseImponible().toString(), compra.igv().toString(), compra.total().toString()
+        ));
         totales.getStyleClass().add(Styles.TEXT_BOLD);
         VBox contenido = new VBox(10, cabecera, lineas, totales);
         contenido.setPrefWidth(720);
         Dialog<Void> dialogo = new Dialog<>();
         dialogo.initOwner(ventana());
-        dialogo.setTitle("Compra " + compra.codigo());
-        dialogo.setHeaderText("Compra " + compra.codigo() + (compra.estado() == EstadoCompra.ANULADA ? " (ANULADA)" : ""));
+        dialogo.setTitle(Mensajes.get("compra.dialogo.titulo", compra.codigo()));
+        dialogo.setHeaderText(Mensajes.get("compra.dialogo.titulo", compra.codigo())
+            + (compra.estado() == EstadoCompra.ANULADA ? " (" + Mensajes.get("compra.estado.anuladaMayus") + ")" : ""));
         dialogo.getDialogPane().setContent(contenido);
         dialogo.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
         dialogo.show();
@@ -267,15 +278,15 @@ public class ComprasController implements Refrescable {
         }
         Alert alerta = new Alert(
             Alert.AlertType.CONFIRMATION,
-            "Se revertirá el stock de la compra " + compra.codigo() + ". ¿Desea anularla?",
+            Mensajes.get("compra.confirmarAnulacion", compra.codigo()),
             ButtonType.YES, ButtonType.NO
         );
         alerta.initOwner(ventana());
-        alerta.setHeaderText("Anular compra");
+        alerta.setHeaderText(Mensajes.get("compra.anularTitulo"));
         alerta.showAndWait().filter(boton -> boton == ButtonType.YES).ifPresent(boton -> Fondo.ejecutar(
             () -> compraService.anular(compra.id()),
             anulada -> {
-                notificador.mostrar(ventana(), "Compra " + anulada.codigo() + " anulada.");
+                notificador.mostrar(ventana(), Mensajes.get("compra.anulada", anulada.codigo()));
                 cargar(paginaActual);
             },
             error -> notificador.mostrar(ventana(), DialogoFormulario.textoError(error))
@@ -300,15 +311,15 @@ public class ComprasController implements Refrescable {
         FilaLinea(Runnable alCambiar, Runnable alQuitar) {
             super(6);
             setAlignment(Pos.CENTER_LEFT);
-            producto.setPromptText("Producto");
+            producto.setPromptText(Mensajes.get("producto.columna.producto"));
             producto.setPrefWidth(250);
-            cantidad.setPromptText("Cant.");
+            cantidad.setPromptText(Mensajes.get("compra.columna.cant"));
             cantidad.setPrefWidth(60);
-            costo.setPromptText("Costo");
+            costo.setPromptText(Mensajes.get("compra.columna.costo"));
             costo.setPrefWidth(80);
-            lote.setPromptText("Lote (opc.)");
+            lote.setPromptText(Mensajes.get("compra.lote.opcional"));
             lote.setPrefWidth(100);
-            vencimiento.setPromptText("Vence");
+            vencimiento.setPromptText(Mensajes.get("compra.columna.vence"));
             vencimiento.setPrefWidth(120);
             Button quitar = new Button("✕");
             quitar.setOnAction(evento -> alQuitar.run());
@@ -320,21 +331,44 @@ public class ComprasController implements Refrescable {
 
     private void abrirNuevaCompra() {
         Formulario f = new Formulario(2);
-        f.titulo("Proveedor y documento");
-        TextField ruc = f.texto("ruc", "RUC del proveedor *", "11 dígitos", false);
-        TextField razonSocial = f.texto("razonSocial", "Razón social *", "", false);
+        f.titulo(Mensajes.get("compra.form.seccionProveedor"));
+        TextField ruc = f.texto("ruc", Mensajes.get("compra.form.rucLabel"), Mensajes.get("laboratorio.form.rucPrompt"), false);
         ComboBox<TipoDocumentoCompra> tipo =
-            f.combo("tipoDocumento", "Tipo de documento *", Arrays.asList(TipoDocumentoCompra.values()), false);
-        tipo.setValue(TipoDocumentoCompra.FACTURA);
-        TextField numero = f.texto("numeroDocumento", "Número de documento *", "F001-00001234", false);
-        DatePicker fechaDocumento = new DatePicker(LocalDate.now());
-        f.agregar("fechaDocumento", "Fecha del documento *", fechaDocumento, false);
-        CheckBox aplicaIgv = f.check("aplicaIgv", "Aplica IGV");
-        aplicaIgv.setSelected(true);
-        CheckBox incluyeIgv = f.check("preciosIncluyenIgv", "Los costos ya incluyen IGV");
-        TextArea observacion = f.area("observacion", "Observación", 2);
+            f.combo("tipoDocumento", Mensajes.get("compra.form.tipoDocumentoLabel"), Arrays.asList(TipoDocumentoCompra.values()), false);
+        tipo.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(TipoDocumentoCompra valor) {
+                return valor == null ? "" : textoTipoDocumento(valor);
+            }
 
-        f.titulo("Productos recibidos");
+            @Override
+            public TipoDocumentoCompra fromString(String texto) {
+                return tipo.getValue();
+            }
+        });
+        tipo.setButtonCell(new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(TipoDocumentoCompra valor, boolean vacio) {
+                super.updateItem(valor, vacio);
+                setText(vacio || valor == null ? null : textoTipoDocumento(valor));
+            }
+        });
+        tipo.setCellFactory(lista -> new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(TipoDocumentoCompra valor, boolean vacio) {
+                super.updateItem(valor, vacio);
+                setText(vacio || valor == null ? null : textoTipoDocumento(valor));
+            }
+        });
+        tipo.setValue(TipoDocumentoCompra.FACTURA);
+        DatePicker fechaDocumento = new DatePicker(LocalDate.now());
+        f.agregar("fechaDocumento", Mensajes.get("compra.form.fechaDocumentoLabel"), fechaDocumento, false);
+        CheckBox aplicaIgv = f.check("aplicaIgv", Mensajes.get("compra.form.aplicaIgvLabel"));
+        aplicaIgv.setSelected(true);
+        CheckBox incluyeIgv = f.check("preciosIncluyenIgv", Mensajes.get("compra.form.costosIncluyenIgvLabel"));
+        TextArea observacion = f.area("observacion", Mensajes.get("compra.form.observacionLabel"), 2);
+
+        f.titulo(Mensajes.get("compra.form.seccionProductos"));
         VBox filas = new VBox(6);
         Label totales = new Label();
         totales.getStyleClass().add(Styles.TEXT_BOLD);
@@ -354,7 +388,7 @@ public class ComprasController implements Refrescable {
         agregarLinea[0].run();
         aplicaIgv.selectedProperty().addListener((obs, a, n) -> recalcular.run());
         incluyeIgv.selectedProperty().addListener((obs, a, n) -> recalcular.run());
-        Button agregar = new Button("+ Agregar producto");
+        Button agregar = new Button(Mensajes.get("compra.boton.agregarProducto"));
         agregar.setOnAction(evento -> agregarLinea[0].run());
 
         Consumer<ProductoResumen> agregarProducto = producto -> {
@@ -386,7 +420,7 @@ public class ComprasController implements Refrescable {
         };
 
         TextField escaner = new TextField();
-        escaner.setPromptText("Escanee el código de barras para agregar un producto y presione Enter");
+        escaner.setPromptText(Mensajes.get("compra.escaner.prompt"));
         escaner.setOnAction(evento -> {
             String codigo = escaner.getText() == null ? "" : escaner.getText().trim();
             escaner.clear();
@@ -400,16 +434,16 @@ public class ComprasController implements Refrescable {
         f.agregar("lineas", "", new Label(), true);
         recalcular.run();
 
-        DialogoFormulario.mostrar(ventana(), "Nueva compra", f, () -> {
+        DialogoFormulario.mostrar(ventana(), Mensajes.get("compra.boton.nueva"), f, () -> {
             List<LineaCompra> lineasCompra = new ArrayList<>();
             for (int i = 0; i < lineas.size(); i++) {
                 lineasCompra.add(leerLinea(i + 1, lineas.get(i)));
             }
             NuevaCompra compra = new NuevaCompra(
-                ruc.getText(), razonSocial.getText(), tipo.getValue(), numero.getText(), fechaDocumento.getValue(),
+                ruc.getText(), tipo.getValue(), fechaDocumento.getValue(),
                 aplicaIgv.isSelected(), incluyeIgv.isSelected(), observacion.getText(), lineasCompra
             );
-            return () -> "Compra " + compraService.registrar(compra).codigo() + " registrada.";
+            return () -> Mensajes.get("compra.registrada", compraService.registrar(compra).codigo());
         }, aviso -> {
             notificador.mostrar(ventana(), aviso);
             cargar(0);
@@ -425,10 +459,11 @@ public class ComprasController implements Refrescable {
                     if (encontrado.get().estado()) {
                         agregarProducto.accept(encontrado.get());
                     } else {
-                        notificador.mostrar(ventana(), "El producto " + encontrado.get().datos().nombreComercial() + " está inactivo.");
+                        notificador.mostrar(ventana(),
+                            Mensajes.get("compra.productoInactivo", encontrado.get().datos().nombreComercial()));
                     }
                 } else if (!Ean13.esValido(codigo)) {
-                    notificador.mostrar(ventana(), "Código no registrado y no es un EAN-13 válido: " + codigo);
+                    notificador.mostrar(ventana(), Mensajes.get("compra.codigoNoRegistrado", codigo));
                 } else {
                     AltaRapidaProducto.abrir(
                         ventana(), codigo, productoService, categoriaService, laboratorioService, agregarProducto,
@@ -443,17 +478,17 @@ public class ComprasController implements Refrescable {
     private LineaCompra leerLinea(int item, FilaLinea fila) {
         ProductoResumen producto = fila.producto.getValue();
         if (producto == null) {
-            throw new CampoInvalidoException("lineas", "Línea " + item + ": seleccione un producto de la lista.");
+            throw new CampoInvalidoException("lineas", Mensajes.get("compra.linea.seleccioneProducto", String.valueOf(item)));
         }
         int cantidad;
         try {
             cantidad = Integer.parseInt(fila.cantidad.getText().trim());
         } catch (NumberFormatException error) {
-            throw new CampoInvalidoException("lineas", "Línea " + item + ": ingrese una cantidad entera.");
+            throw new CampoInvalidoException("lineas", Mensajes.get("compra.linea.cantidadEntera", String.valueOf(item)));
         }
         BigDecimal costo = decimal(fila.costo.getText());
         if (costo == null) {
-            throw new CampoInvalidoException("lineas", "Línea " + item + ": ingrese un costo válido.");
+            throw new CampoInvalidoException("lineas", Mensajes.get("compra.linea.costoValido", String.valueOf(item)));
         }
         return new LineaCompra(producto.id(), cantidad, costo, fila.lote.getText(), fila.vencimiento.getValue());
     }
@@ -472,7 +507,7 @@ public class ComprasController implements Refrescable {
             }
         }
         CalculadoraIgv.Totales t = CalculadoraIgv.calcular(importes, aplicaIgv, incluyeIgv, tasaIgv);
-        return "Base S/ " + t.baseImponible() + " · IGV S/ " + t.igv() + " · Total S/ " + t.total();
+        return Mensajes.get("compra.totales", t.baseImponible().toString(), t.igv().toString(), t.total().toString());
     }
 
     private static BigDecimal decimal(String texto) {
@@ -499,5 +534,15 @@ public class ComprasController implements Refrescable {
 
     private Window ventana() {
         return raiz.getScene() == null ? null : raiz.getScene().getWindow();
+    }
+
+    private String textoProveedor(CompraResumen compra) {
+        return compra.proveedor() == null
+            ? Mensajes.get("compra.sinProveedor")
+            : compra.proveedor() + " (" + compra.ruc() + ")";
+    }
+
+    private String textoTipoDocumento(TipoDocumentoCompra tipo) {
+        return Mensajes.get("tipoDocumentoCompra." + tipo.name().toLowerCase());
     }
 }

@@ -7,6 +7,7 @@ import com.botica.inteligente.producto.repository.ProductoRepository;
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.Textos;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -23,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class LaboratorioService {
 
     private static final Logger log = LoggerFactory.getLogger(LaboratorioService.class);
-    private static final String SIN_PERMISO = "No tiene permisos para modificar laboratorios.";
     private static final int LIMITE_AUTOCOMPLETAR = 10;
     private static final Pattern RUC = Pattern.compile("\\d{11}");
     private static final Pattern CORREO = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
@@ -60,7 +60,7 @@ public class LaboratorioService {
 
     @Transactional
     public LaboratorioResumen crear(LaboratorioComando comando) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.laboratorio.sinPermiso"));
         LaboratorioComando datos = normalizar(comando);
         if (laboratorioRepository.existsByNombreIgnoreCase(datos.nombre())) {
             throw nombreDuplicado();
@@ -77,7 +77,7 @@ public class LaboratorioService {
 
     @Transactional
     public LaboratorioResumen actualizar(Long id, LaboratorioComando comando) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.laboratorio.sinPermiso"));
         Laboratorio laboratorio = buscar(id);
         LaboratorioComando datos = normalizar(comando);
         if (laboratorioRepository.existsByNombreIgnoreCaseAndIdNot(datos.nombre(), id)) {
@@ -92,10 +92,10 @@ public class LaboratorioService {
 
     @Transactional
     public LaboratorioResumen cambiarEstado(Long id, boolean estado) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.laboratorio.sinPermiso"));
         Laboratorio laboratorio = buscar(id);
         if (!estado && productoRepository.existsByLaboratorioIdAndEstadoTrue(id)) {
-            throw new NegocioException("No se puede desactivar: el laboratorio tiene productos activos.");
+            throw new NegocioException(Mensajes.get("error.laboratorio.tieneProductosActivos"));
         }
         laboratorio.setEstado(estado);
         return resumen(laboratorioRepository.save(laboratorio));
@@ -103,17 +103,17 @@ public class LaboratorioService {
 
     private Laboratorio buscar(Long id) {
         return laboratorioRepository.findById(id)
-            .orElseThrow(() -> new NegocioException("No se encontró el laboratorio seleccionado."));
+            .orElseThrow(() -> new NegocioException(Mensajes.get("error.laboratorio.noEncontrado")));
     }
 
     private LaboratorioComando normalizar(LaboratorioComando c) {
         String ruc = Textos.limpiar(c.ruc());
         if (ruc != null && !RUC.matcher(ruc).matches()) {
-            throw new CampoInvalidoException("ruc", "El RUC debe tener 11 dígitos.");
+            throw new CampoInvalidoException("ruc", Mensajes.get("error.laboratorio.rucInvalido"));
         }
         String correo = Textos.opcional("correo", "correo", c.correo(), 150);
         if (correo != null && !CORREO.matcher(correo).matches()) {
-            throw new CampoInvalidoException("correo", "El correo no tiene un formato válido.");
+            throw new CampoInvalidoException("correo", Mensajes.get("error.laboratorio.correoInvalido"));
         }
         return new LaboratorioComando(
             Textos.requerido("nombre", "el nombre", c.nombre(), 150),
@@ -135,11 +135,11 @@ public class LaboratorioService {
     }
 
     private CampoInvalidoException nombreDuplicado() {
-        return new CampoInvalidoException("nombre", "Ya existe un laboratorio con ese nombre.");
+        return new CampoInvalidoException("nombre", Mensajes.get("error.laboratorio.nombreDuplicado"));
     }
 
     private CampoInvalidoException rucDuplicado() {
-        return new CampoInvalidoException("ruc", "Ya existe un laboratorio con ese RUC.");
+        return new CampoInvalidoException("ruc", Mensajes.get("error.laboratorio.rucDuplicado"));
     }
 
     private LaboratorioResumen resumen(Laboratorio l) {

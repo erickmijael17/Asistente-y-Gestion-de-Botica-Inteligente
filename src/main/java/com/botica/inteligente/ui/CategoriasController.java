@@ -4,6 +4,7 @@ import com.botica.inteligente.categoria.service.CategoriaComando;
 import com.botica.inteligente.categoria.service.CategoriaResumen;
 import com.botica.inteligente.categoria.service.CategoriaService;
 import com.botica.inteligente.security.SesionActual;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import org.springframework.context.annotation.Scope;
@@ -30,19 +31,21 @@ public class CategoriasController extends CatalogoController<CategoriaResumen, C
 
     @Override
     protected String titulo() {
-        return "Categorías";
+        return Mensajes.get("categoria.titulo");
     }
 
     @Override
     protected String textoBotonNuevo() {
-        return "Nueva categoría";
+        return Mensajes.get("categoria.boton.nuevo");
     }
 
     @Override
     protected void configurarColumnas() {
-        columna("Nombre", 220, CategoriaResumen::nombre);
-        columna("Descripción", 380, c -> c.descripcion() == null ? "" : c.descripcion());
-        columna("Estado", 90, c -> c.estado() ? "Activa" : "Inactiva");
+        columna(Mensajes.get("categoria.columna.nombre"), 220, CategoriaResumen::nombre);
+        columna(Mensajes.get("categoria.columna.descripcion"), 380, c -> c.descripcion() == null ? "" : c.descripcion());
+        columna(Mensajes.get("catalogo.columna.estado"), 90, c -> c.estado()
+            ? Mensajes.get("categoria.estado.activa")
+            : Mensajes.get("categoria.estado.inactiva"));
     }
 
     @Override
@@ -73,13 +76,17 @@ public class CategoriasController extends CatalogoController<CategoriaResumen, C
     @Override
     protected void abrirFormulario(CategoriaResumen fila) {
         Formulario formulario = new Formulario(1);
-        TextField nombre = formulario.texto("nombre", "Nombre *", "Ej. Analgésicos", false);
-        TextArea descripcion = formulario.area("descripcion", "Descripción", 3);
+        TextField nombre = formulario.texto(
+            "nombre", Mensajes.get("categoria.form.nombreLabel"), Mensajes.get("categoria.form.nombrePrompt"), false
+        );
+        TextArea descripcion = formulario.area("descripcion", Mensajes.get("categoria.columna.descripcion"), 3);
         if (fila != null) {
             nombre.setText(fila.nombre());
             descripcion.setText(fila.descripcion());
         }
-        mostrarDialogo(fila == null ? "Nueva categoría" : "Editar categoría", formulario, () -> {
+        mostrarDialogo(
+            fila == null ? Mensajes.get("categoria.dialogo.nuevo") : Mensajes.get("categoria.dialogo.editar"),
+            formulario, () -> {
             CategoriaComando comando = new CategoriaComando(nombre.getText(), descripcion.getText());
             return () -> {
                 if (fila == null) {

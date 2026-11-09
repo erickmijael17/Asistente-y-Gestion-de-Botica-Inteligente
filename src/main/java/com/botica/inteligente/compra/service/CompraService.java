@@ -18,6 +18,7 @@ import com.botica.inteligente.proveedor.repository.ProveedorRepository;
 import com.botica.inteligente.security.SesionActual;
 import com.botica.inteligente.shared.exception.CampoInvalidoException;
 import com.botica.inteligente.shared.exception.NegocioException;
+import com.botica.inteligente.shared.i18n.Mensajes;
 import com.botica.inteligente.shared.util.CalculadoraIgv;
 import com.botica.inteligente.shared.util.Textos;
 import com.botica.inteligente.usuario.repository.UsuarioRepository;
@@ -39,7 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CompraService {
 
     private static final Logger log = LoggerFactory.getLogger(CompraService.class);
-    private static final String SIN_PERMISO = "No tiene permisos para registrar o anular compras.";
     private static final Pattern RUC = Pattern.compile("(10|15|17|20)\\d{9}");
 
     private final CompraRepository compraRepository;
@@ -85,40 +85,32 @@ public class CompraService {
 
     @Transactional
     public CompraResumen registrar(NuevaCompra nueva) {
-        sesionActual.exigirOwner(SIN_PERMISO);
-        String ruc = Textos.requerido("ruc", "el RUC del proveedor", nueva.ruc(), 11);
-        if (!RUC.matcher(ruc).matches()) {
-            throw new CampoInvalidoException("ruc", "El RUC debe tener 11 dígitos y empezar con 10, 15, 17 o 20.");
+        sesionActual.exigirOwner(Mensajes.get("error.compra.sinPermiso"));
+        String ruc = Textos.opcional("ruc", "el RUC del proveedor", nueva.ruc(), 11);
+        if (ruc != null && !RUC.matcher(ruc).matches()) {
+            throw new CampoInvalidoException("ruc", Mensajes.get("error.compra.rucInvalido"));
         }
-        String razonSocial = Textos.requerido("razonSocial", "la razón social", nueva.razonSocial(), 200);
         TipoDocumentoCompra tipoDocumento = nueva.tipoDocumento();
         if (tipoDocumento == null) {
-            throw new CampoInvalidoException("tipoDocumento", "Seleccione el tipo de documento.");
+            throw new CampoInvalidoException("tipoDocumento", Mensajes.get("error.compra.tipoDocumentoRequerido"));
         }
-        String numeroDocumento = Textos.requerido("numeroDocumento", "el número de documento", nueva.numeroDocumento(), 40);
         LocalDate hoy = LocalDate.now();
         if (nueva.fechaDocumento() == null) {
-            throw new CampoInvalidoException("fechaDocumento", "Ingrese la fecha del documento.");
+            throw new CampoInvalidoException("fechaDocumento", Mensajes.get("error.compra.fechaRequerida"));
         }
         if (nueva.fechaDocumento().isAfter(hoy)) {
-            throw new CampoInvalidoException("fechaDocumento", "La fecha del documento no puede ser futura.");
+            throw new CampoInvalidoException("fechaDocumento", Mensajes.get("error.compra.fechaFutura"));
         }
         if (nueva.lineas() == null || nueva.lineas().isEmpty()) {
-            throw new CampoInvalidoException("lineas", "Agregue al menos un producto a la compra.");
+            throw new CampoInvalidoException("lineas", Mensajes.get("error.compra.sinLineas"));
         }
 
-        Proveedor proveedor = proveedorRepository.findByRuc(ruc).orElseGet(() -> {
+        Proveedor proveedor = ruc == null ? null : proveedorRepository.findByRuc(ruc).orElseGet(() -> {
             Proveedor creado = new Proveedor();
             creado.setRuc(ruc);
-            creado.setRazonSocial(razonSocial);
+            creado.setRazonSocial(ruc);
             return proveedorRepository.save(creado);
         });
-        if (compraRepository.existsByProveedorIdAndTipoDocumentoAndNumeroDocumentoIgnoreCaseAndEstado(
-            proveedor.getId(), tipoDocumento, numeroDocumento, EstadoCompra.REGISTRADA)) {
-            throw new CampoInvalidoException(
-                "numeroDocumento", "Ya existe una compra registrada con ese documento para el proveedor."
-            );
-        }
 
         int numero = compraRepository.ultimoNumero() + 1;
         Compra compra = new Compra();
@@ -128,7 +120,6 @@ public class CompraService {
         compra.setProveedor(proveedor);
         compra.setUsuario(usuarioRepository.getReferenceById(sesionActual.usuarioAutenticado().orElseThrow().id()));
         compra.setTipoDocumento(tipoDocumento);
-        compra.setNumeroDocumento(numeroDocumento);
         compra.setFechaDocumento(nueva.fechaDocumento());
         compra.setAplicaIgv(nueva.aplicaIgv());
         compra.setPreciosIncluyenIgv(nueva.preciosIncluyenIgv());
@@ -180,16 +171,15 @@ public class CompraService {
 
     @Transactional
     public CompraResumen anular(Long id) {
-        sesionActual.exigirOwner(SIN_PERMISO);
+        sesionActual.exigirOwner(Mensajes.get("error.compra.sinPermiso"));
         Compra compra = buscarConDetalle(id);
         if (compra.getEstado() == EstadoCompra.ANULADA) {
-            throw new NegocioException("La compra ya está anulada.");
+            throw new NegocioException(Mensajes.get("error.compra.yaAnulada"));
         }
         for (CompraDetalle detalle : compra.getDetalles()) {
             if (detalle.getLote().getCantidadActual() < detalle.getCantidad()) {
                 throw new NegocioException(
-                    "No se puede anular: parte de la mercadería del lote " + detalle.getLote().getCodigoLote()
-                        + " ya se vendió o se dio de baja."
+                    Mensajes.get("error.compra.loteYaVendido", detalle.getLote().getCodigoLote())
                 );
             }
         }
@@ -212,26 +202,27 @@ public class CompraService {
 
     private LineaValidada validarLinea(int item, LineaCompra linea, String codigoCompra, LocalDate hoy) {
         String campo = "lineas";
+        String numero = String.valueOf(item);
         if (linea.productoId() == null) {
-            throw new CampoInvalidoException(campo, "Línea " + item + ": seleccione un producto.");
+            throw new CampoInvalidoException(campo, Mensajes.get("error.compra.linea.seleccioneProducto", numero));
         }
         Producto producto = productoRepository.findById(linea.productoId())
-            .orElseThrow(() -> new CampoInvalidoException(campo, "Línea " + item + ": el producto no existe."));
+            .orElseThrow(() -> new CampoInvalidoException(campo, Mensajes.get("error.compra.linea.productoNoExiste", numero)));
         if (!Boolean.TRUE.equals(producto.getEstado())) {
-            throw new CampoInvalidoException(campo, "Línea " + item + ": el producto está inactivo.");
+            throw new CampoInvalidoException(campo, Mensajes.get("error.compra.linea.productoInactivo", numero));
         }
         if (linea.cantidad() < 1) {
-            throw new CampoInvalidoException(campo, "Línea " + item + ": la cantidad debe ser al menos 1.");
+            throw new CampoInvalidoException(campo, Mensajes.get("error.compra.linea.cantidadMinima", numero));
         }
         if (linea.costoUnitario() == null || linea.costoUnitario().signum() <= 0) {
-            throw new CampoInvalidoException(campo, "Línea " + item + ": el costo debe ser mayor a cero.");
+            throw new CampoInvalidoException(campo, Mensajes.get("error.compra.linea.costoMayorACero", numero));
         }
         LocalDate vencimiento = linea.fechaVencimiento();
         if (vencimiento == null && producto.getTipoProducto() != TipoProducto.OTRO) {
-            throw new CampoInvalidoException(campo, "Línea " + item + ": ingrese la fecha de vencimiento.");
+            throw new CampoInvalidoException(campo, Mensajes.get("error.compra.linea.vencimientoRequerido", numero));
         }
         if (vencimiento != null && !vencimiento.isAfter(hoy)) {
-            throw new CampoInvalidoException(campo, "Línea " + item + ": el producto ya está vencido.");
+            throw new CampoInvalidoException(campo, Mensajes.get("error.compra.linea.productoVencido", numero));
         }
         String codigoLote = Textos.opcional(campo, "lote", linea.codigoLote(), 60);
         if (codigoLote == null) {
@@ -244,7 +235,7 @@ public class CompraService {
 
     private Compra buscarConDetalle(Long id) {
         return compraRepository.buscarConDetalle(id)
-            .orElseThrow(() -> new NegocioException("No se encontró la compra seleccionada."));
+            .orElseThrow(() -> new NegocioException(Mensajes.get("error.compra.noEncontrada")));
     }
 
     private CompraResumen resumen(Compra c, boolean conDetalle) {
@@ -255,8 +246,10 @@ public class CompraService {
             )).toList()
             : List.of();
         return new CompraResumen(
-            c.getId(), c.getCodigo(), c.getFecha(), c.getProveedor().getRazonSocial(), c.getProveedor().getRuc(),
-            c.getTipoDocumento(), c.getNumeroDocumento(), c.getFechaDocumento(), c.getBaseImponible(),
+            c.getId(), c.getCodigo(), c.getFecha(),
+            c.getProveedor() == null ? null : c.getProveedor().getRazonSocial(),
+            c.getProveedor() == null ? null : c.getProveedor().getRuc(),
+            c.getTipoDocumento(), c.getFechaDocumento(), c.getBaseImponible(),
             c.getIgv(), c.getTotal(), c.getEstado(), detalles
         );
     }

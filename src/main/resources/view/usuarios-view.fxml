@@ -13,19 +13,19 @@
       fx:controller="com.botica.inteligente.ui.UsuariosController" spacing="16" styleClass="placeholder-view">
     <padding><Insets top="24" right="28" bottom="24" left="28" /></padding>
     <HBox spacing="10" alignment="CENTER_LEFT">
-        <TextField fx:id="usernameField" promptText="Nombre de usuario" HBox.hgrow="ALWAYS" />
-        <PasswordField fx:id="passwordField" promptText="Contraseña (mín. 8)" />
+        <TextField fx:id="usernameField" promptText="%usuarios.username.prompt" HBox.hgrow="ALWAYS" />
+        <PasswordField fx:id="passwordField" promptText="%usuarios.password.prompt" />
         <ComboBox fx:id="rolCombo" prefWidth="130" />
-        <Button fx:id="crearUsuarioButton" text="Crear usuario" onAction="#crearUsuario" />
+        <Button fx:id="crearUsuarioButton" text="%usuarios.crear" onAction="#crearUsuario" />
     </HBox>
     <Label fx:id="mensajeLabel" styleClass="muted-text" />
     <TableView fx:id="usuariosTabla" VBox.vgrow="ALWAYS">
         <columns>
-            <TableColumn fx:id="usernameColumn" text="Usuario" prefWidth="260" />
-            <TableColumn fx:id="rolColumn" text="Rol" prefWidth="150" />
-            <TableColumn fx:id="estadoColumn" text="Estado" prefWidth="130" />
-            <TableColumn fx:id="accionColumn" text="Acción" prefWidth="170" />
+            <TableColumn fx:id="usernameColumn" text="%usuarios.columna.usuario" prefWidth="260" />
+            <TableColumn fx:id="rolColumn" text="%usuarios.columna.rol" prefWidth="150" />
+            <TableColumn fx:id="estadoColumn" text="%usuarios.columna.estado" prefWidth="130" />
+            <TableColumn fx:id="accionColumn" text="%usuarios.columna.accion" prefWidth="170" />
         </columns>
     </TableView>
-    <Button fx:id="actualizarButton" text="Actualizar lista" onAction="#refrescar" />
+    <Button fx:id="actualizarButton" text="%usuarios.actualizar" onAction="#refrescar" />
 </VBox>
